@@ -7,7 +7,7 @@ There might be bugs. Please back up your patch files before using this tool on t
 
 The tool naively expects a flat list of patch files per folder. The expected file naming is NNN.PRO, where NNN is a 3 digit, zero-padded number like 001.
 
-![Screenshot](https://raw.githubusercontent.com/kimsand/ThirdWaveLibrarian/master/images/ThirdWaveLibrarian.png)
+![Screenshot](https://github.com/kimsand/ThirdWaveLibrarian/blob/4ec31972c4de5bd46d8416eadc4ad05abf123af7/images/ThirdWaveLibrarian.png)
 
 Features:
 * Load all 5 banks at once from their root folder on disk.
