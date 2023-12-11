@@ -9,8 +9,6 @@ import SwiftUI
 
 @main
 struct ThirdWaveLibrarianApp: App {
-//    @Environment(\.openWindow) private var openWindow
-
     @State private var banks = Banks()
 
     var body: some Scene {
@@ -33,12 +31,11 @@ struct ThirdWaveLibrarianApp: App {
                                 banks = Banks()
 
                                 let subDirNames = await fileHandler.subDirNames(at: dirURL)
-                                let bankTypes = BankType.allCases
-
                                 let lastLane = min(subDirNames.count, 5)
-                                var lane = 1
-                                for subDirName in subDirNames[lane-1..<lastLane] {
-                                    if let bankType = bankTypes[safeIndex: lane-1] {
+                                var lane = 0
+
+                                for subDirName in subDirNames[lane..<lastLane] {
+                                    if let bankType = BankType.allCases[safeIndex: lane] {
                                         let bankURL = dirURL.appendingPathComponent(subDirName, conformingTo: .directory)
                                         let patchList = await fileHandler.openDir(at: bankURL, intoLane: lane)
                                         banks.load(patches: patchList, toBank: bankType, dirURL: bankURL)
@@ -46,8 +43,6 @@ struct ThirdWaveLibrarianApp: App {
                                         lane += 1
                                     }
                                 }
-
-//                                openWindow(id: "banks-window")
                             }
                         }
                     }
@@ -55,101 +50,27 @@ struct ThirdWaveLibrarianApp: App {
 
                 Divider()
 
-                Button("Load bank into lane 1...") {
-                    let panel = NSOpenPanel()
+                ForEach(BankType.allCases, id: \.self) { type in
+                    Button("Load bank into lane \(type.rawValue+1)...") {
+                        let panel = NSOpenPanel()
 
-                    panel.allowsMultipleSelection = false
-                    panel.canChooseDirectories = true
-                    panel.canChooseFiles = false
+                        panel.allowsMultipleSelection = false
+                        panel.canChooseDirectories = true
+                        panel.canChooseFiles = false
 
-                    if panel.runModal() == .OK {
-                        Task {
-                            if let dirURL = panel.url {
-                                let fileHandler = FileHandler()
+                        if panel.runModal() == .OK {
+                            Task {
+                                if let dirURL = panel.url {
+                                    let fileHandler = FileHandler()
 
-                                let patchList = await fileHandler.openDir(at: dirURL, intoLane: 1)
-                                banks.load(patches: patchList, toBank: .bank1, dirURL: dirURL)
-                                banks.rename(bank: .bank1, withTitle: dirURL.lastPathComponent)
+                                    let patchList = await fileHandler.openDir(at: dirURL, intoLane: type.rawValue)
+                                    banks.load(patches: patchList, toBank: type, dirURL: dirURL)
+                                    banks.rename(bank: type, withTitle: dirURL.lastPathComponent)
+                                }
                             }
                         }
-                    }
-                }.keyboardShortcut("1")
-                Button("Load bank into lane 2...") {
-                    let panel = NSOpenPanel()
-
-                    panel.allowsMultipleSelection = false
-                    panel.canChooseDirectories = true
-                    panel.canChooseFiles = false
-
-                    if panel.runModal() == .OK {
-                        Task {
-                            if let dirURL = panel.url {
-                                let fileHandler = FileHandler()
-
-                                let patchList = await fileHandler.openDir(at: dirURL, intoLane: 2)
-                                banks.load(patches: patchList, toBank: .bank2, dirURL: dirURL)
-                                banks.rename(bank: .bank2, withTitle: dirURL.lastPathComponent)
-                            }
-                        }
-                    }
-                }.keyboardShortcut("2")
-                Button("Load bank into lane 3...") {
-                    let panel = NSOpenPanel()
-
-                    panel.allowsMultipleSelection = false
-                    panel.canChooseDirectories = true
-                    panel.canChooseFiles = false
-
-                    if panel.runModal() == .OK {
-                        Task {
-                            if let dirURL = panel.url {
-                                let fileHandler = FileHandler()
-
-                                let patchList = await fileHandler.openDir(at: dirURL, intoLane: 3)
-                                banks.load(patches: patchList, toBank: .bank3, dirURL: dirURL)
-                                banks.rename(bank: .bank3, withTitle: dirURL.lastPathComponent)
-                            }
-                        }
-                    }
-                }.keyboardShortcut("3")
-                Button("Load bank into lane 4...") {
-                    let panel = NSOpenPanel()
-
-                    panel.allowsMultipleSelection = false
-                    panel.canChooseDirectories = true
-                    panel.canChooseFiles = false
-
-                    if panel.runModal() == .OK {
-                        Task {
-                            if let dirURL = panel.url {
-                                let fileHandler = FileHandler()
-
-                                let patchList = await fileHandler.openDir(at: dirURL, intoLane: 4)
-                                banks.load(patches: patchList, toBank: .bank4, dirURL: dirURL)
-                                banks.rename(bank: .bank4, withTitle: dirURL.lastPathComponent)
-                            }
-                        }
-                    }
-                }.keyboardShortcut("4")
-                Button("Load bank into lane 5...") {
-                    let panel = NSOpenPanel()
-
-                    panel.allowsMultipleSelection = false
-                    panel.canChooseDirectories = true
-                    panel.canChooseFiles = false
-
-                    if panel.runModal() == .OK {
-                        Task {
-                            if let dirURL = panel.url {
-                                let fileHandler = FileHandler()
-
-                                let patchList = await fileHandler.openDir(at: dirURL, intoLane: 5)
-                                banks.load(patches: patchList, toBank: .bank5, dirURL: dirURL)
-                                banks.rename(bank: .bank5, withTitle: dirURL.lastPathComponent)
-                            }
-                        }
-                    }
-                }.keyboardShortcut("5")
+                    }.keyboardShortcut(KeyboardShortcut(KeyEquivalent(Character("\(type.rawValue+1)"))))
+                }
 
                 Divider()
 

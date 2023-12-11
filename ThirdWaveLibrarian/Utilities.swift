@@ -15,4 +15,11 @@ extension Array {
 
         return self[index]
     }
+
+    mutating func replace(
+        _ newElement: Element,
+        at i: Int
+    ) {
+        replaceSubrange(i...i, with: [newElement])
+    }
 }

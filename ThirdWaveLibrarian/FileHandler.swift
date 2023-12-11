@@ -53,7 +53,7 @@ class FileHandler {
             let filesInDir = filesInDirectory(at: dirURL, options: options)
 
             for await fileURL in filesInDir {
-                let index = Int(fileURL.deletingPathExtension().lastPathComponent) ?? 0
+                let index = (Int(fileURL.deletingPathExtension().lastPathComponent) ?? 1) - 1
 
                 var lineNumber = 0
                 for try await line in fileURL.lines.prefix(5) {
@@ -75,7 +75,7 @@ class FileHandler {
         do {
             try FileManager.default.moveItem(atPath: fromURL.relativePath, toPath: toURL.relativePath)
         } catch let error as NSError {
-            print("Error: \(error)")
+            assertionFailure("Error: \(error)")
         }
     }
 }
