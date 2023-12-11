@@ -53,6 +53,7 @@ class FileHandler {
             let filesInDir = filesInDirectory(at: dirURL, options: options)
 
             for await fileURL in filesInDir {
+                // Convert filename into patch index (1-indexed to 0-indexed)
                 let index = (Int(fileURL.deletingPathExtension().lastPathComponent) ?? 1) - 1
 
                 var lineNumber = 0

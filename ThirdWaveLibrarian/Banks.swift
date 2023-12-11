@@ -126,12 +126,12 @@ struct Banks {
 
         // TODO: Allow only one selected destination patch when pasting or the result will be unpredictable
         guard let pastePatch = banks[type.rawValue].selections.first else {
-            print("Paste skipped. No patch selected in destination lane.")
+            print("Paste skipped. No patch selected in destination lane with index \(type.rawValue).")
             return
         }
 
         guard let pasteIndex = banks[type.rawValue].patches.firstIndex(where: {pastePatch.id == $0.id}) else {
-            assertionFailure("Paste failed! Selected patch not found in destination lane.")
+            assertionFailure("Paste failed! Selected patch not found in destination lane with index \(type.rawValue).")
             return
         }
 
@@ -142,7 +142,7 @@ struct Banks {
 
             // Remove patches from old lane
             remove(patches: Array(cutBank), fromBank: cutBankType)
-            updateLanesAndIndices(forPatches: &banks[type.rawValue].patches, inLane: type.rawValue)
+            updateIndices(forPatches: &banks[cutBankType.rawValue].patches)
         } else {
             // Reorder patches within lane
             banks[type.rawValue].patches.move(
@@ -154,9 +154,12 @@ struct Banks {
             updateIndices(forPatches: &banks[type.rawValue].patches)
         }
 
-        // Remove selections involved in the cut-and-paste
-        banks[cutBankType.rawValue].selections.removeAll()
+        // Unselect all patches at the destination
         banks[type.rawValue].selections.removeAll()
+
+        // Unselect patches at the source that were selected to be cut
+        cutBank.forEach({ banks[cutBankType.rawValue].selections.remove($0)})
+
         cutBank.removeAll()
     }
 
@@ -172,7 +175,7 @@ struct Banks {
         // Rename to temporary filenames to avoid clashing with existing filenames
         patches.forEach { patch in
             guard let fromType = BankType(rawValue: patch.lane) else {
-                assertionFailure("Save to temp failed! Bank type for lane number not found.")
+                assertionFailure("Save to temp failed! Bank type for lane with index \(patch.lane) not found.")
                 return
             }
 
@@ -194,7 +197,7 @@ struct Banks {
         // Rename to actual filenames when there is no longer a risk of name clash
         patches.forEach { patch in
             guard let type = BankType(rawValue: patch.newLane) else {
-                assertionFailure("Save from temp failed! Bank type for lane number not found.")
+                assertionFailure("Save from temp failed! Bank type for lane with index \(patch.lane) not found.")
                 return
             }
 
