@@ -37,7 +37,7 @@ struct Banks {
         // Remove any existing patches in the lane
         banks[type.rawValue].patches.removeAll()
         banks[type.rawValue].selections.removeAll()
-        
+
         append(patches: patchList, toBank: type)
     }
 
@@ -89,6 +89,20 @@ struct Banks {
         resetLanesAndIndices(forPatches: &banks[type.rawValue].patches)
     }
 
+    private func resetPatchNames(forPatches patches: inout [Patch]) {
+        patches.enumerated().forEach { index, patch in
+            if patch.name != patch.storedName {
+                var patch = patch
+                patch.updateStoredName(patch.name)
+                patches.replace(patch, at: index)
+            }
+        }
+    }
+
+    mutating func resetPatchNames(forBank type: BankType) {
+        resetPatchNames(forPatches: &banks[type.rawValue].patches)
+    }
+
     mutating func reorderPatches(from indexSet: IndexSet, to index: Int, inBank type: BankType) {
         banks[type.rawValue].patches.move(fromOffsets: indexSet, toOffset: index)
         updateIndices(forPatches: &banks[type.rawValue].patches)
@@ -110,6 +124,13 @@ struct Banks {
                 banks[type.rawValue].patches.firstIndex(where: {patch.id == $0.id})
             }))
         )
+    }
+
+    mutating func updateSelectionAfterRename(patch: Patch, inBank type: BankType) {
+        if let selPatch = banks[type.rawValue].selections.first(where: {$0.id == patch.id}) {
+            banks[type.rawValue].selections.remove(selPatch)
+            banks[type.rawValue].selections.insert(patch)
+        }
     }
 
     mutating func cutPatches(fromBank type: BankType) {
@@ -167,6 +188,10 @@ struct Banks {
         return banks[type.rawValue].patches.filter({$0.lane != $0.newLane || $0.index != $0.newIndex})
     }
 
+    private func renamedPatches(forBank type: BankType) -> [Patch] {
+        return banks[type.rawValue].patches.filter({$0.name != $0.storedName})
+    }
+
     func saveReorderedPatchesToTemp(forBank toType: BankType) -> [Patch] {
         let patches = movedPatches(forBank: toType)
 
@@ -180,12 +205,12 @@ struct Banks {
             }
 
             let fromFileName = String(format: "%03d.PRO", patch.index+1)
-            let fromDir = dirURL(forBank: fromType).appending(path: fromFileName)
+            let fromFileURL = dirURL(forBank: fromType).appending(path: fromFileName)
 
             let toFileName = String(format: "%03dT.PRO", patch.newIndex+1)
-            let toDir = dirURL(forBank: toType).appending(path: toFileName)
+            let toFileURL = dirURL(forBank: toType).appending(path: toFileName)
 
-            fileHandler.renameFile(fromURL: fromDir, toURL: toDir)
+            fileHandler.renameFile(fromURL: fromFileURL, toURL: toFileURL)
         }
 
         return patches
@@ -204,10 +229,20 @@ struct Banks {
             let fromFileName = String(format: "%03dT.PRO", patch.newIndex+1)
             let toFileName = String(format: "%03d.PRO", patch.newIndex+1)
 
-            let fromDir = dirURL(forBank: type).appending(path: fromFileName)
-            let toDir = dirURL(forBank: type).appending(path: toFileName)
+            let fromFileURL = dirURL(forBank: type).appending(path: fromFileName)
+            let toFileURL = dirURL(forBank: type).appending(path: toFileName)
 
-            fileHandler.renameFile(fromURL: fromDir, toURL: toDir)
+            fileHandler.renameFile(fromURL: fromFileURL, toURL: toFileURL)
+        }
+    }
+
+    func saveRenamedPatches(forBank type: BankType) {
+        let fileHandler = FileHandler()
+
+        renamedPatches(forBank: type).forEach { patch in
+            let fileName = String(format: "%03d.PRO", patch.index+1)
+            let fileURL = dirURL(forBank: type).appending(path: fileName)
+            fileHandler.renamePatch(fileURL: fileURL, newName: patch.name)
         }
     }
 }

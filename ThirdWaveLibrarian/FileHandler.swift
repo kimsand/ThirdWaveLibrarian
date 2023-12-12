@@ -7,6 +7,10 @@
 
 import Foundation
 
+struct LineNumberFor {
+    static let patchName = 1
+}
+
 private actor PatchActor {
     private var patches = [Patch]()
 
@@ -57,8 +61,8 @@ class FileHandler {
                 let index = (Int(fileURL.deletingPathExtension().lastPathComponent) ?? 1) - 1
 
                 var lineNumber = 0
-                for try await line in fileURL.lines.prefix(5) {
-                    if lineNumber == 1 {
+                for try await line in fileURL.lines.prefix(2) {
+                    if lineNumber == LineNumberFor.patchName {
                         await patchActor.appendPatch(patch: Patch(name: line, index: index, lane: lane))
                     }
 
@@ -75,8 +79,20 @@ class FileHandler {
     func renameFile(fromURL: URL, toURL: URL) {
         do {
             try FileManager.default.moveItem(atPath: fromURL.relativePath, toPath: toURL.relativePath)
-        } catch let error as NSError {
-            assertionFailure("Error: \(error)")
+        } catch {
+            assertionFailure("Rename file failed! Error: \(error.localizedDescription)")
+        }
+    }
+
+    func renamePatch(fileURL: URL, newName: String) {
+        do {
+            let text = try String(contentsOf: fileURL, encoding: .utf8)
+            var lines = text.components(separatedBy: "\r\n")
+            lines.replace(newName, at: LineNumberFor.patchName)
+            let result = lines.joined(separator: "\r\n")
+            try result.write(to: fileURL, atomically: true, encoding: .utf8)
+        } catch {
+            assertionFailure("Rename patch failed! Error: \(error.localizedDescription)")
         }
     }
 }

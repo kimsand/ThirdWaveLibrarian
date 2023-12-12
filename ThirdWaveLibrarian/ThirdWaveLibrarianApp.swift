@@ -50,7 +50,7 @@ struct ThirdWaveLibrarianApp: App {
 
                 Divider()
 
-                ForEach(BankType.allCases, id: \.self) { type in
+                ForEach(BankType.allCases, id: \.rawValue) { type in
                     Button("Load bank into lane \(type.rawValue+1)...") {
                         let panel = NSOpenPanel()
 
@@ -75,9 +75,11 @@ struct ThirdWaveLibrarianApp: App {
                 Divider()
 
                 Button("Save all lanes") {
-                    let patches = BankType.allCases.flatMap({banks.saveReorderedPatchesToTemp(forBank: $0)})
-                    banks.saveTempPatchesAfterMove(patches: patches)
+                    let tempPatches = BankType.allCases.flatMap({banks.saveReorderedPatchesToTemp(forBank: $0)})
+                    banks.saveTempPatchesAfterMove(patches: tempPatches)
                     BankType.allCases.forEach({banks.resetLanesAndIndices(forBank: $0)})
+                    BankType.allCases.forEach({banks.saveRenamedPatches(forBank: $0)})
+                    BankType.allCases.forEach({banks.resetPatchNames(forBank: $0)})
                 }.keyboardShortcut("s")
             }
         }

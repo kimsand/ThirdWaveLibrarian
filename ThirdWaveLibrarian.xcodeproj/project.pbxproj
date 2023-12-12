@@ -16,6 +16,7 @@
 		E87BCF2B2B12F207005C2586 /* BanksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E87BCF2A2B12F207005C2586 /* BanksView.swift */; };
 		E87BCF2D2B12F208005C2586 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E87BCF2C2B12F208005C2586 /* Assets.xcassets */; };
 		E87BCF302B12F208005C2586 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E87BCF2F2B12F208005C2586 /* Preview Assets.xcassets */; };
+		E8EB10CF2B280E9D00A8973B /* ViewUtilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8EB10CE2B280E9D00A8973B /* ViewUtilities.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +31,7 @@
 		E87BCF2C2B12F208005C2586 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E87BCF2F2B12F208005C2586 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		E87BCF312B12F208005C2586 /* ThirdWaveLibrarian.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ThirdWaveLibrarian.entitlements; sourceTree = "<group>"; };
+		E8EB10CE2B280E9D00A8973B /* ViewUtilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewUtilities.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -69,6 +71,7 @@
 				E85651252B1314CB0025B828 /* Patch.swift */,
 				E85651232B12FC380025B828 /* FileHandler.swift */,
 				E874754D2B175615005F237F /* Utilities.swift */,
+				E8EB10CE2B280E9D00A8973B /* ViewUtilities.swift */,
 				E87BCF2C2B12F208005C2586 /* Assets.xcassets */,
 				E87BCF312B12F208005C2586 /* ThirdWaveLibrarian.entitlements */,
 				E87BCF2E2B12F208005C2586 /* Preview Content */,
@@ -159,6 +162,7 @@
 				E85651242B12FC380025B828 /* FileHandler.swift in Sources */,
 				E82B9BD32B14804B00000102 /* Banks.swift in Sources */,
 				E87BCF2B2B12F207005C2586 /* BanksView.swift in Sources */,
+				E8EB10CF2B280E9D00A8973B /* ViewUtilities.swift in Sources */,
 				E87BCF292B12F207005C2586 /* ThirdWaveLibrarianApp.swift in Sources */,
 				E844C0752B25CD3300B9971F /* Bank.swift in Sources */,
 			);

@@ -13,12 +13,14 @@ struct BanksView: View {
     var body: some View {
         VStack {
             HStack {
-                ForEach(BankType.allCases, id: \.self) { type in
+                ForEach(BankType.allCases, id: \.rawValue) { type in
                     VStack(alignment: .leading) {
                         List(selection: $banks.banks[type.rawValue].selections) {
                             Section {
                                 ForEach($banks.banks[type.rawValue].patches, id: \.self, editActions: .move) { $patch in
-                                    Text(patch.name)
+                                    AtomicTextField(patch.storedName, text: $patch.name, onEditingDone: ({
+                                        banks.updateSelectionAfterRename(patch: patch, inBank: type)
+                                    }))
                                 }.onMove { from, to in
                                     banks.reorderPatches(from: from, to: to, inBank: type)
                                 }
