@@ -20,11 +20,10 @@ Features:
 * Save the reorganised banks back to disk.
 
 Wish list:
-* Error messages and robustness.
+* Allow pasting to empty banks.
 * Add patches to a bank.
 * Move patches between banks by drag-and-drop.
 * Wavetable dependency list, showing which patches use each wavetable.
 * Repository with all patches.
 * Duplicate handling.
 * Patch diffing.
-* Windows version.

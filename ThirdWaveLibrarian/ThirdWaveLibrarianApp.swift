@@ -10,10 +10,16 @@ import SwiftUI
 @main
 struct ThirdWaveLibrarianApp: App {
     @State private var banks = Banks()
+    @State private var doShowAlert = false
+    @State private var error: FileError? = nil
 
     var body: some Scene {
         Window("Third Wave Librarian", id: "banks-window") {
             BanksView(banks: $banks)
+                .alert(isPresented: $doShowAlert, error: error) { _ in
+                } message: { error in
+                    Text(error.recoverySuggestion ?? "Ensure all files are valid patch files and are named correctly.")
+                }
         }.commands {
             CommandGroup(replacing: CommandGroupPlacement.newItem) {
                 Button("Load banks into all lanes...") {
@@ -25,24 +31,29 @@ struct ThirdWaveLibrarianApp: App {
 
                     if panel.runModal() == .OK {
                         Task {
-                            if let dirURL = panel.url {
-                                let fileHandler = FileHandler()
+                            do {
+                                if let dirURL = panel.url {
+                                    let fileHandler = FileHandler()
 
-                                banks = Banks()
+                                    banks = Banks()
 
-                                let subDirNames = await fileHandler.subDirNames(at: dirURL)
-                                let lastLane = min(subDirNames.count, 5)
-                                var lane = 0
+                                    let subDirNames = try await fileHandler.subDirNames(at: dirURL)
+                                    let lastLane = min(subDirNames.count, 5)
+                                    var lane = 0
 
-                                for subDirName in subDirNames[lane..<lastLane] {
-                                    if let bankType = BankType.allCases[safeIndex: lane] {
-                                        let bankURL = dirURL.appendingPathComponent(subDirName, conformingTo: .directory)
-                                        let patchList = await fileHandler.openDir(at: bankURL, intoLane: lane)
-                                        banks.load(patches: patchList, toBank: bankType, dirURL: bankURL)
-                                        banks.rename(bank: bankType, withTitle: subDirName)
-                                        lane += 1
+                                    for subDirName in subDirNames[lane..<lastLane] {
+                                        if let bankType = BankType.allCases[safeIndex: lane] {
+                                            let bankURL = dirURL.appendingPathComponent(subDirName, conformingTo: .directory)
+                                            let patchList = try await fileHandler.openDir(at: bankURL, intoLane: lane)
+                                            banks.load(patches: patchList, toBank: bankType, dirURL: bankURL)
+                                            banks.rename(bank: bankType, withTitle: subDirName)
+                                            lane += 1
+                                        }
                                     }
                                 }
+                            } catch let error as FileError {
+                                self.error = error
+                                doShowAlert = true
                             }
                         }
                     }
@@ -60,12 +71,17 @@ struct ThirdWaveLibrarianApp: App {
 
                         if panel.runModal() == .OK {
                             Task {
-                                if let dirURL = panel.url {
-                                    let fileHandler = FileHandler()
+                                do {
+                                    if let dirURL = panel.url {
+                                        let fileHandler = FileHandler()
 
-                                    let patchList = await fileHandler.openDir(at: dirURL, intoLane: type.rawValue)
-                                    banks.load(patches: patchList, toBank: type, dirURL: dirURL)
-                                    banks.rename(bank: type, withTitle: dirURL.lastPathComponent)
+                                        let patchList = try await fileHandler.openDir(at: dirURL, intoLane: type.rawValue)
+                                        banks.load(patches: patchList, toBank: type, dirURL: dirURL)
+                                        banks.rename(bank: type, withTitle: dirURL.lastPathComponent)
+                                    }
+                                } catch let error as FileError {
+                                    self.error = error
+                                    doShowAlert = true
                                 }
                             }
                         }
