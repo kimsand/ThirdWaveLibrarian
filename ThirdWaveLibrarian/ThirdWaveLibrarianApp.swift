@@ -91,6 +91,7 @@ struct ThirdWaveLibrarianApp: App {
                 Divider()
 
                 Button("Save all lanes") {
+                    banks.deleteMarkedPatches()
                     let tempPatches = BankType.allCases.flatMap({banks.saveReorderedPatchesToTemp(forBank: $0)})
                     banks.saveTempPatchesAfterMove(patches: tempPatches)
                     BankType.allCases.forEach({banks.resetLanesAndIndices(forBank: $0)})

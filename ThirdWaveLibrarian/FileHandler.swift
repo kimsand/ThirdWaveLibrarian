@@ -153,4 +153,12 @@ struct FileHandler {
             assertionFailure("Rename patch failed! Error: \(error.localizedDescription)")
         }
     }
+
+    func deleteFile(fileURL: URL) {
+        do {
+            try FileManager.default.removeItem(atPath: fileURL.relativePath)
+        } catch {
+            assertionFailure("Delete file failed! Error: \(error.localizedDescription)")
+        }
+    }
 }

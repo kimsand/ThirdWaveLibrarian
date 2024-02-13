@@ -22,6 +22,7 @@ struct Banks {
 
     var cutBank = Set<Patch>()
     var cutBankType = BankType.bank1
+    var toBeDeleted = [Patch]()
 
     private func dirURL(forBank type: BankType) -> URL {
         banks[type.rawValue].dirURL
@@ -112,10 +113,17 @@ struct Banks {
     }
 
     mutating func removeSelectedPatches(fromBank type: BankType) {
-        remove(patches: Array(banks[type.rawValue].selections), fromBank: type)
+        let patchList = Array(banks[type.rawValue].selections)
+        markPatchesForDeletion(patches: patchList)
+        remove(patches: patchList, fromBank: type)
+        updateIndices(forPatches: &banks[type.rawValue].patches)
 
         // Remove selections since this is not automatic
         banks[type.rawValue].selections.removeAll()
+    }
+
+    private mutating func markPatchesForDeletion(patches patchList: [Patch]) {
+        toBeDeleted.append(contentsOf: patchList)
     }
 
     private mutating func remove(patches patchList: [Patch], fromBank type: BankType) {
@@ -216,11 +224,11 @@ struct Banks {
         return patches
     }
 
-    func saveTempPatchesAfterMove(patches: [Patch]) {
+    func saveTempPatchesAfterMove(patches patchList: [Patch]) {
         let fileHandler = FileHandler()
 
         // Rename to actual filenames when there is no longer a risk of name clash
-        patches.forEach { patch in
+        patchList.forEach { patch in
             guard let type = BankType(rawValue: patch.newLane) else {
                 assertionFailure("Save from temp failed! Bank type for lane with index \(patch.lane) not found.")
                 return
@@ -244,5 +252,23 @@ struct Banks {
             let fileURL = dirURL(forBank: type).appending(path: fileName)
             fileHandler.renamePatch(fileURL: fileURL, newName: patch.name)
         }
+    }
+
+    mutating func deleteMarkedPatches() {
+        let fileHandler = FileHandler()
+
+        toBeDeleted.forEach { patch in
+            guard let bankType = BankType(rawValue: patch.lane) else {
+                assertionFailure("Deletion failed! Bank type for lane with index \(patch.lane) not found.")
+                return
+            }
+
+            let fileName = String(format: "%03d.PRO", patch.index+1)
+            let fileURL = dirURL(forBank: bankType).appending(path: fileName)
+
+            fileHandler.deleteFile(fileURL: fileURL)
+        }
+
+        toBeDeleted.removeAll()
     }
 }
