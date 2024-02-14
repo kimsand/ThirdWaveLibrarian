@@ -15,9 +15,9 @@ struct LineNumberFor {
 enum FileError: LocalizedError {
     case invalidFileName(fileName: String)
     case wrongFileHeader(fileName: String)
-    case noFilesFound(dirName: String)
     case missingSubDir(dirName: String)
     case failedDirContents(dirName: String)
+    case createDirFailed(dirName: String)
 
     var errorDescription: String? {
         switch self {
@@ -25,12 +25,12 @@ enum FileError: LocalizedError {
             "Invalid file name: \(fileName)"
         case .wrongFileHeader(fileName: let fileName):
             "Invalid file header for \(fileName)"
-        case .noFilesFound(dirName: let dirName):
-            "No files in \(dirName)"
         case .missingSubDir(dirName: let dirName):
             "Missing subdirectory in \(dirName)"
         case .failedDirContents(dirName: let dirName):
             "Failed to get directory contents of \(dirName)"
+        case .createDirFailed(dirName: let dirName):
+            "Failed to create directory named \(dirName)"
         }
     }
 
@@ -40,12 +40,12 @@ enum FileError: LocalizedError {
             "The patch files must be named NNN.PRO, where NNN is a 3 digit, zero-padded number like 001."
         case .wrongFileHeader:
             "This is not a supported patch file."
-        case .noFilesFound:
-            "No files found in the provided directory."
         case .missingSubDir:
             "When opening multiple banks, the root directory must contain a subdirectory for each bank."
         case .failedDirContents:
             "Ensure the directory exists and that this application has permission to read and write to it."
+        case .createDirFailed:
+            "Ensure the directory name is valid and that this application has permission to read and write to it."
         }
     }
 }
@@ -124,14 +124,23 @@ struct FileHandler {
                 }
             }
 
-            let patches = await patchActor.patchList()
-            guard !patches.isEmpty else {
-                throw FileError.noFilesFound(dirName: dirURL.lastPathComponent)
-            }
-            return patches
+            return await patchActor.patchList()
         }
 
         return try await task.value
+    }
+
+    func doesDirExist(dirURL: URL) -> Bool {
+        FileManager.default.fileExists(atPath: dirURL.path(percentEncoded: false))
+    }
+
+    func createDir(dirURL: URL) throws {
+        do {
+            try FileManager.default.createDirectory(at: dirURL, withIntermediateDirectories: false)
+        } catch {
+            assertionFailure("Create directory failed! Error: \(error.localizedDescription)")
+            throw FileError.createDirFailed(dirName: dirURL.lastPathComponent)
+        }
     }
 
     func renameFile(fromURL: URL, toURL: URL) {

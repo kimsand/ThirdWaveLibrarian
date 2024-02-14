@@ -11,5 +11,8 @@ struct Bank {
     var patches = [Patch]()
     var selections = Set<Patch>()
     var title: String
-    var dirURL = URL.currentDirectory()
+    let saveName: String
+    var dirURL = URL.documentsDirectory
+    var isDirLoaded = false
+    var placeholder = [Patch(name: "Placeholder", index: 0, lane: 0)]
 }

@@ -12,17 +12,27 @@ enum BankType: Int, CaseIterable {
 }
 
 struct Banks {
+    let fileHandler = FileHandler()
+
     var banks = [
-        Bank(title: "Bank lane 1"),
-        Bank(title: "Bank lane 2"),
-        Bank(title: "Bank lane 3"),
-        Bank(title: "Bank lane 4"),
-        Bank(title: "Bank lane 5")
+        Bank(title: "Bank lane 1", saveName: "Bank 1"),
+        Bank(title: "Bank lane 2", saveName: "Bank 2"),
+        Bank(title: "Bank lane 3", saveName: "Bank 3"),
+        Bank(title: "Bank lane 4", saveName: "Bank 4"),
+        Bank(title: "Bank lane 5", saveName: "Bank 5")
     ]
 
     var cutBank = Set<Patch>()
     var cutBankType = BankType.bank1
     var toBeDeleted = [Patch]()
+
+    func saveName(forBank type: BankType) -> String {
+        if banks[type.rawValue].isDirLoaded {
+            banks[type.rawValue].title
+        } else {
+            banks[type.rawValue].saveName
+        }
+    }
 
     private func dirURL(forBank type: BankType) -> URL {
         banks[type.rawValue].dirURL
@@ -34,6 +44,7 @@ struct Banks {
 
     mutating func load(patches patchList: [Patch], toBank type: BankType, dirURL: URL) {
         banks[type.rawValue].dirURL = dirURL
+        banks[type.rawValue].isDirLoaded = true
 
         // Remove any existing patches in the lane
         banks[type.rawValue].patches.removeAll()
@@ -148,20 +159,28 @@ struct Banks {
     }
 
     mutating func pasteCutPatches(toBank type: BankType) {
+        let pasteIndex: Int
+
         guard !cutBank.isEmpty else {
             print("Paste skipped. Cutbank is empty.")
             return
         }
 
-        // TODO: Allow only one selected destination patch when pasting or the result will be unpredictable
-        guard let pastePatch = banks[type.rawValue].selections.first else {
-            print("Paste skipped. No patch selected in destination lane with index \(type.rawValue).")
-            return
-        }
+        if banks[type.rawValue].patches.isEmpty {
+            pasteIndex = 0
+        } else {
+            // TODO: Allow only one selected destination patch when pasting or the result will be unpredictable
+            guard let pastePatch = banks[type.rawValue].selections.first else {
+                print("Paste skipped. No patch selected in destination lane with index \(type.rawValue).")
+                return
+            }
 
-        guard let pasteIndex = banks[type.rawValue].patches.firstIndex(where: {pastePatch.id == $0.id}) else {
-            assertionFailure("Paste failed! Selected patch not found in destination lane with index \(type.rawValue).")
-            return
+            guard let pastePatchIndex = banks[type.rawValue].patches.firstIndex(where: {pastePatch.id == $0.id}) else {
+                assertionFailure("Paste failed! Selected patch not found in destination lane with index \(type.rawValue).")
+                return
+            }
+
+            pasteIndex = pastePatchIndex
         }
 
         if cutBankType != type {
@@ -203,8 +222,6 @@ struct Banks {
     func saveReorderedPatchesToTemp(forBank toType: BankType) -> [Patch] {
         let patches = movedPatches(forBank: toType)
 
-        let fileHandler = FileHandler()
-
         // Rename to temporary filenames to avoid clashing with existing filenames
         patches.forEach { patch in
             guard let fromType = BankType(rawValue: patch.lane) else {
@@ -225,8 +242,6 @@ struct Banks {
     }
 
     func saveTempPatchesAfterMove(patches patchList: [Patch]) {
-        let fileHandler = FileHandler()
-
         // Rename to actual filenames when there is no longer a risk of name clash
         patchList.forEach { patch in
             guard let type = BankType(rawValue: patch.newLane) else {
@@ -245,8 +260,6 @@ struct Banks {
     }
 
     func saveRenamedPatches(forBank type: BankType) {
-        let fileHandler = FileHandler()
-
         renamedPatches(forBank: type).forEach { patch in
             let fileName = String(format: "%03d.PRO", patch.index+1)
             let fileURL = dirURL(forBank: type).appending(path: fileName)
@@ -255,8 +268,6 @@ struct Banks {
     }
 
     mutating func deleteMarkedPatches() {
-        let fileHandler = FileHandler()
-
         toBeDeleted.forEach { patch in
             guard let bankType = BankType(rawValue: patch.lane) else {
                 assertionFailure("Deletion failed! Bank type for lane with index \(patch.lane) not found.")
@@ -270,5 +281,65 @@ struct Banks {
         }
 
         toBeDeleted.removeAll()
+    }
+
+    func isDirMissing(forBank type: BankType) -> Bool {
+        let hasPatches = !banks[type.rawValue].patches.isEmpty
+
+        if banks[type.rawValue].isDirLoaded {
+            return hasPatches && !fileHandler.doesDirExist(dirURL: dirURL(forBank: type))
+        } else {
+            return hasPatches
+        }
+    }
+
+    private var areAllDirsLoaded: Bool {
+        for type in BankType.allCases {
+            if isDirMissing(forBank: type) {
+                return false
+            }
+        }
+
+        return true
+    }
+
+    mutating func createDirIfMissing(forBank type: BankType, dirURL: URL) throws {
+        try fileHandler.createDir(dirURL: dirURL)
+        banks[type.rawValue].title = dirURL.lastPathComponent
+        banks[type.rawValue].dirURL = dirURL
+        banks[type.rawValue].isDirLoaded = true
+    }
+
+    mutating func load(dirURL: URL) async throws {
+        let subDirNames = try await fileHandler.subDirNames(at: dirURL)
+        let lastLane = min(subDirNames.count, 5)
+        var lane = 0
+
+        for subDirName in subDirNames[lane..<lastLane] {
+            if let bankType = BankType.allCases[safeIndex: lane] {
+                let bankURL = dirURL.appendingPathComponent(subDirName, conformingTo: .directory)
+                let patchList = try await fileHandler.openDir(at: bankURL, intoLane: lane)
+                load(patches: patchList, toBank: bankType, dirURL: bankURL)
+                rename(bank: bankType, withTitle: subDirName)
+                lane += 1
+            }
+        }
+    }
+
+    mutating func load(bank type: BankType, dirURL: URL) async throws {
+        let patchList = try await fileHandler.openDir(at: dirURL, intoLane: type.rawValue)
+        load(patches: patchList, toBank: type, dirURL: dirURL)
+        rename(bank: type, withTitle: dirURL.lastPathComponent)
+    }
+
+    mutating func save() {
+        if areAllDirsLoaded {
+            deleteMarkedPatches()
+            let tempPatches = BankType.allCases.flatMap({saveReorderedPatchesToTemp(forBank: $0)})
+            saveTempPatchesAfterMove(patches: tempPatches)
+            BankType.allCases.forEach({resetLanesAndIndices(forBank: $0)})
+            BankType.allCases.forEach({saveRenamedPatches(forBank: $0)})
+            BankType.allCases.forEach({resetPatchNames(forBank: $0)})
+        }
     }
 }

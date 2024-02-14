@@ -33,23 +33,8 @@ struct ThirdWaveLibrarianApp: App {
                         Task {
                             do {
                                 if let dirURL = panel.url {
-                                    let fileHandler = FileHandler()
-
                                     banks = Banks()
-
-                                    let subDirNames = try await fileHandler.subDirNames(at: dirURL)
-                                    let lastLane = min(subDirNames.count, 5)
-                                    var lane = 0
-
-                                    for subDirName in subDirNames[lane..<lastLane] {
-                                        if let bankType = BankType.allCases[safeIndex: lane] {
-                                            let bankURL = dirURL.appendingPathComponent(subDirName, conformingTo: .directory)
-                                            let patchList = try await fileHandler.openDir(at: bankURL, intoLane: lane)
-                                            banks.load(patches: patchList, toBank: bankType, dirURL: bankURL)
-                                            banks.rename(bank: bankType, withTitle: subDirName)
-                                            lane += 1
-                                        }
-                                    }
+                                    try await banks.load(dirURL: dirURL)
                                 }
                             } catch let error as FileError {
                                 self.error = error
@@ -73,11 +58,7 @@ struct ThirdWaveLibrarianApp: App {
                             Task {
                                 do {
                                     if let dirURL = panel.url {
-                                        let fileHandler = FileHandler()
-
-                                        let patchList = try await fileHandler.openDir(at: dirURL, intoLane: type.rawValue)
-                                        banks.load(patches: patchList, toBank: type, dirURL: dirURL)
-                                        banks.rename(bank: type, withTitle: dirURL.lastPathComponent)
+                                        try await banks.load(bank: type, dirURL: dirURL)
                                     }
                                 } catch let error as FileError {
                                     self.error = error
@@ -91,12 +72,34 @@ struct ThirdWaveLibrarianApp: App {
                 Divider()
 
                 Button("Save all lanes") {
-                    banks.deleteMarkedPatches()
-                    let tempPatches = BankType.allCases.flatMap({banks.saveReorderedPatchesToTemp(forBank: $0)})
-                    banks.saveTempPatchesAfterMove(patches: tempPatches)
-                    BankType.allCases.forEach({banks.resetLanesAndIndices(forBank: $0)})
-                    BankType.allCases.forEach({banks.saveRenamedPatches(forBank: $0)})
-                    BankType.allCases.forEach({banks.resetPatchNames(forBank: $0)})
+                    BankType.allCases.forEach { type in
+                        if banks.isDirMissing(forBank: type) {
+                            let panel = NSSavePanel()
+
+                            panel.canCreateDirectories = true
+                            panel.showsTagField = false
+                            panel.message = "Choose where to create the directory for bank lane \(type.rawValue+1)"
+                            panel.nameFieldLabel = "Bank name"
+                            panel.nameFieldStringValue = banks.saveName(forBank: type)
+                            panel.prompt = "Create bank"
+
+                            if panel.runModal() == .OK {
+                                Task {
+                                    do {
+                                        if let dirURL = panel.url {
+                                            try banks.createDirIfMissing(forBank: type, dirURL: dirURL)
+                                            banks.save()
+                                        }
+                                    } catch let error as FileError {
+                                        self.error = error
+                                        doShowAlert = true
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    banks.save()
                 }.keyboardShortcut("s")
             }
         }
