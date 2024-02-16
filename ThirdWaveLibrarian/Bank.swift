@@ -15,4 +15,5 @@ struct Bank {
     var dirURL = URL.documentsDirectory
     var isDirLoaded = false
     var placeholder = [Patch(name: "Placeholder", index: 0, lane: 0)]
+    var hasUnsavedChanges = false
 }

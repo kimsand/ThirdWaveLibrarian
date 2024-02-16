@@ -32,7 +32,7 @@ struct BanksView: View {
                                 Section {
                                     ForEach($banks.banks[type.rawValue].patches, id: \.self, editActions: .move) { $patch in
                                         AtomicTextField(patch.storedName, text: $patch.name, onEditingDone: ({
-                                            banks.updateSelectionAfterRename(patch: patch, inBank: type)
+                                            banks.patchHasBeenRenamed(patch: patch, inBank: type)
                                         }))
                                     }.onMove { from, to in
                                         banks.reorderPatches(from: from, to: to, inBank: type)
@@ -51,7 +51,7 @@ struct BanksView: View {
                             }.onPasteCommand(of: ["public.plain-text"]) { _ in
                                 banks.pasteCutPatches(toBank: type)
                             }
-                            Text("\(banks.banks[type.rawValue].patches.count) patch\(banks.banks[type.rawValue].patches.count != 1 ? "es" : "")")
+                            Text("\(banks.banks[type.rawValue].patches.count) patch\(banks.banks[type.rawValue].patches.count != 1 ? "es" : "")\(banks.banks[type.rawValue].hasUnsavedChanges ? " *" : "")")
                                 .padding(.leading, 14)
                         }
                     }

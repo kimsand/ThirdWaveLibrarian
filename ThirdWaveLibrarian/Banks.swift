@@ -56,6 +56,9 @@ struct Banks {
         banks[type.rawValue].selections.removeAll()
 
         append(patches: patchList, toBank: type)
+
+        // Mark bank as no longer having unsaved changes
+        clearSaveStatus(forBank: type)
     }
 
     mutating func append(patches patchList: [Patch], toBank type: BankType) {
@@ -130,12 +133,23 @@ struct Banks {
         }
     }
 
+    mutating func setSaveStatus(forBank type: BankType) {
+        banks[type.rawValue].hasUnsavedChanges = true
+    }
+
+    mutating func clearSaveStatus(forBank type: BankType) {
+        banks[type.rawValue].hasUnsavedChanges = false
+    }
+
     mutating func reorderPatches(from indexSet: IndexSet, to index: Int, inBank type: BankType) {
         banks[type.rawValue].patches.move(fromOffsets: indexSet, toOffset: index)
         updateIndices(forPatches: &banks[type.rawValue].patches)
 
         // Remove selections since this is not automatic
         banks[type.rawValue].selections.removeAll()
+
+        // Mark bank as having unsaved changes
+        setSaveStatus(forBank: type)
     }
 
     mutating func removeSelectedPatches(fromBank type: BankType) {
@@ -146,6 +160,9 @@ struct Banks {
 
         // Remove selections since this is not automatic
         banks[type.rawValue].selections.removeAll()
+
+        // Mark bank as having unsaved changes
+        setSaveStatus(forBank: type)
     }
 
     private mutating func markPatchesForDeletion(patches patchList: [Patch]) {
@@ -161,11 +178,14 @@ struct Banks {
         )
     }
 
-    mutating func updateSelectionAfterRename(patch: Patch, inBank type: BankType) {
+    mutating func patchHasBeenRenamed(patch: Patch, inBank type: BankType) {
         if let selPatch = banks[type.rawValue].selections.first(where: {$0.id == patch.id}) {
             banks[type.rawValue].selections.remove(selPatch)
             banks[type.rawValue].selections.insert(patch)
         }
+
+        // Mark bank as having unsaved changes
+        setSaveStatus(forBank: type)
     }
 
     mutating func cutPatches(fromBank type: BankType) {
@@ -222,6 +242,9 @@ struct Banks {
             // Remove patches from old lane
             remove(patches: Array(cutBank), fromBank: cutBankType)
             updateIndices(forPatches: &banks[cutBankType.rawValue].patches)
+
+            // Mark bank as having unsaved changes
+            setSaveStatus(forBank: cutBankType)
         } else {
             // Reorder patches within lane
             banks[type.rawValue].patches.move(
@@ -236,6 +259,9 @@ struct Banks {
         // Unselect patches at the source that were selected to be cut
         cutBank.forEach({ banks[cutBankType.rawValue].selections.remove($0)})
         cutBank.removeAll()
+
+        // Mark bank as having unsaved changes
+        setSaveStatus(forBank: type)
     }
 
     private func movedPatches(forBank type: BankType) -> [Patch] {
@@ -413,6 +439,9 @@ struct Banks {
             BankType.allCases.forEach({resetLanesAndIndices(forBank: $0)})
             BankType.allCases.forEach({saveRenamedPatches(forBank: $0)})
             BankType.allCases.forEach({resetPatchNames(forBank: $0)})
+
+            // Mark bank as no longer having unsaved changes
+            BankType.allCases.forEach({clearSaveStatus(forBank: $0)})
         }
     }
 }
