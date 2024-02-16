@@ -45,6 +45,9 @@ struct BanksView: View {
                             }.onCutCommand {
                                 banks.cutPatches(fromBank: type)
                                 return [NSItemProvider(object: "ThirdWavePatch" as NSString)]
+                            }.onCopyCommand {
+                                banks.copyPatches(fromBank: type)
+                                return [NSItemProvider(object: "ThirdWavePatch" as NSString)]
                             }.onPasteCommand(of: ["public.plain-text"]) { _ in
                                 banks.pasteCutPatches(toBank: type)
                             }

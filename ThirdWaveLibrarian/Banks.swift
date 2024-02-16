@@ -22,9 +22,10 @@ struct Banks {
         Bank(title: "Bank lane 5", saveName: "Bank 5")
     ]
 
-    var cutBank = Set<Patch>()
-    var cutBankType = BankType.bank1
-    var toBeDeleted = [Patch]()
+    private(set) var cutBank = Set<Patch>()
+    private(set) var cutBankType = BankType.bank1
+    private(set) var isCopyAndPaste = false
+    private(set) var toBeDeleted = [Patch]()
 
     func saveName(forBank type: BankType) -> String {
         if banks[type.rawValue].isDirLoaded {
@@ -32,6 +33,10 @@ struct Banks {
         } else {
             banks[type.rawValue].saveName
         }
+    }
+
+    func patchWithID(_ patchID: Patch.ID) -> Patch? {
+        BankType.allCases.compactMap({banks[$0.rawValue].patches.first(where: {$0.id == patchID})}).first
     }
 
     private func dirURL(forBank type: BankType) -> URL {
@@ -115,6 +120,16 @@ struct Banks {
         resetPatchNames(forPatches: &banks[type.rawValue].patches)
     }
 
+    mutating func resetCopyStatuses(forBank type: BankType) {
+        banks[type.rawValue].patches.enumerated().forEach { index, patch in
+            if patch.sourceID != nil {
+                var patch = patch
+                patch.resetCopyStatus()
+                banks[type.rawValue].patches.replace(patch, at: index)
+            }
+        }
+    }
+
     mutating func reorderPatches(from indexSet: IndexSet, to index: Int, inBank type: BankType) {
         banks[type.rawValue].patches.move(fromOffsets: indexSet, toOffset: index)
         updateIndices(forPatches: &banks[type.rawValue].patches)
@@ -134,7 +149,8 @@ struct Banks {
     }
 
     private mutating func markPatchesForDeletion(patches patchList: [Patch]) {
-        toBeDeleted.append(contentsOf: patchList)
+        // Ignore patches needing file copies, to avoid deleting files belonging to their sources
+        toBeDeleted.append(contentsOf: patchList.filter({$0.sourceID == nil}))
     }
 
     private mutating func remove(patches patchList: [Patch], fromBank type: BankType) {
@@ -156,6 +172,14 @@ struct Banks {
         // Make a copy (assign by value) of the list of currently selected items for the bank
         cutBank = banks[type.rawValue].selections
         cutBankType = type
+        isCopyAndPaste = false
+    }
+
+    mutating func copyPatches(fromBank type: BankType) {
+        // Make a copy (assign by value) of the list of currently selected items for the bank
+        cutBank = banks[type.rawValue].selections
+        cutBankType = type
+        isCopyAndPaste = true
     }
 
     mutating func pasteCutPatches(toBank type: BankType) {
@@ -183,7 +207,14 @@ struct Banks {
             pasteIndex = pastePatchIndex
         }
 
-        if cutBankType != type {
+        // Unselect all patches at the destination before pasting (which could mess up selection)
+        banks[type.rawValue].selections.removeAll()
+
+        if isCopyAndPaste {
+            // Insert copies of patches at paste position
+            banks[type.rawValue].patches.insert(contentsOf: cutBank.map({$0.copyWithNewID()}), at: pasteIndex)
+            updateLanesAndIndices(forPatches: &banks[type.rawValue].patches, inLane: type.rawValue)
+        } else if cutBankType != type {
             // Insert patches in new lane
             banks[type.rawValue].patches.insert(contentsOf: cutBank, at: pasteIndex)
             updateLanesAndIndices(forPatches: &banks[type.rawValue].patches, inLane: type.rawValue)
@@ -202,24 +233,24 @@ struct Banks {
             updateIndices(forPatches: &banks[type.rawValue].patches)
         }
 
-        // Unselect all patches at the destination
-        banks[type.rawValue].selections.removeAll()
-
         // Unselect patches at the source that were selected to be cut
         cutBank.forEach({ banks[cutBankType.rawValue].selections.remove($0)})
-
         cutBank.removeAll()
     }
 
     private func movedPatches(forBank type: BankType) -> [Patch] {
-        return banks[type.rawValue].patches.filter({$0.lane != $0.newLane || $0.index != $0.newIndex})
+        banks[type.rawValue].patches.filter({$0.sourceID == nil && ($0.lane != $0.newLane || $0.index != $0.newIndex)})
+    }
+
+    private func copiedPatches(forBank type: BankType) -> [Patch] {
+        banks[type.rawValue].patches.filter({$0.sourceID != nil})
     }
 
     private func renamedPatches(forBank type: BankType) -> [Patch] {
-        return banks[type.rawValue].patches.filter({$0.name != $0.storedName})
+        banks[type.rawValue].patches.filter({$0.name != $0.storedName})
     }
 
-    func saveReorderedPatchesToTemp(forBank toType: BankType) -> [Patch] {
+    func movePatchesToTemp(forBank toType: BankType) -> [Patch] {
         let patches = movedPatches(forBank: toType)
 
         // Rename to temporary filenames to avoid clashing with existing filenames
@@ -241,7 +272,38 @@ struct Banks {
         return patches
     }
 
-    func saveTempPatchesAfterMove(patches patchList: [Patch]) {
+    func copyPatchesToTemp(forBank toType: BankType) -> [Patch] {
+        let patches = copiedPatches(forBank: toType)
+
+        // Rename to temporary filenames to avoid clashing with existing filenames
+        patches.forEach { patch in
+            guard let fromType = BankType(rawValue: patch.lane) else {
+                assertionFailure("Save to temp failed! Bank type for lane with index \(patch.lane) not found.")
+                return
+            }
+
+            // Copy the file from the source patch, not from a copy of the source
+            guard
+                let sourceID = patch.sourceID,
+                let sourcePatch = patchWithID(sourceID)
+            else {
+                assertionFailure("Copy file failed! Source patch for \(patch.name) not found.")
+                return
+            }
+
+            let fromFileName = String(format: "%03d.PRO", sourcePatch.index+1)
+            let fromFileURL = dirURL(forBank: fromType).appending(path: fromFileName)
+
+            let toFileName = String(format: "%03dT.PRO", patch.newIndex+1)
+            let toFileURL = dirURL(forBank: toType).appending(path: toFileName)
+
+            fileHandler.copyFile(fromURL: fromFileURL, toURL: toFileURL)
+        }
+
+        return patches
+    }
+
+    func renameTempPatches(_ patchList: [Patch]) {
         // Rename to actual filenames when there is no longer a risk of name clash
         patchList.forEach { patch in
             guard let type = BankType(rawValue: patch.newLane) else {
@@ -334,9 +396,20 @@ struct Banks {
 
     mutating func save() {
         if areAllDirsLoaded {
+            // Ensure patch files are copied before potentially being moved or deleted
+            let copyPatches = BankType.allCases.flatMap({copyPatchesToTemp(forBank: $0)})
+
+            // Ensure all copies are done before any moves, to avoid renaming files before they are copied
+            let movePatches = BankType.allCases.flatMap({movePatchesToTemp(forBank: $0)})
+
+            // After copy operations, all patches have their own files and no longer need copying
+            // Move operations must also be complete before resetting this status which these also rely upon
+            BankType.allCases.forEach({resetCopyStatuses(forBank: $0)})
+
+            // Delete marked patches before renaming temp patches to avoid name clashes
             deleteMarkedPatches()
-            let tempPatches = BankType.allCases.flatMap({saveReorderedPatchesToTemp(forBank: $0)})
-            saveTempPatchesAfterMove(patches: tempPatches)
+            renameTempPatches(copyPatches + movePatches)
+
             BankType.allCases.forEach({resetLanesAndIndices(forBank: $0)})
             BankType.allCases.forEach({saveRenamedPatches(forBank: $0)})
             BankType.allCases.forEach({resetPatchNames(forBank: $0)})

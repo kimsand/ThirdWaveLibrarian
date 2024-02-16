@@ -143,6 +143,14 @@ struct FileHandler {
         }
     }
 
+    func copyFile(fromURL: URL, toURL: URL) {
+        do {
+            try FileManager.default.copyItem(atPath: fromURL.relativePath, toPath: toURL.relativePath)
+        } catch {
+            assertionFailure("Copy file failed! Error: \(error.localizedDescription)")
+        }
+    }
+
     func renameFile(fromURL: URL, toURL: URL) {
         do {
             try FileManager.default.moveItem(atPath: fromURL.relativePath, toPath: toURL.relativePath)

@@ -10,11 +10,12 @@ import Foundation
 struct Patch: Identifiable, Hashable, Comparable {
     let id = UUID()
     var name: String
-    var storedName: String
-    var index: Int
-    var newIndex: Int
-    var lane: Int
-    var newLane: Int
+    private(set) var storedName: String
+    private(set) var index: Int
+    private(set) var newIndex: Int
+    private(set) var lane: Int
+    private(set) var newLane: Int
+    private(set) var sourceID: UUID?
 
     static func < (lhs: Patch, rhs: Patch) -> Bool {
         return lhs.index < rhs.index
@@ -47,5 +48,16 @@ struct Patch: Identifiable, Hashable, Comparable {
 
     mutating func updateNewLane(_ updatedLane: Int) {
         newLane = updatedLane
+    }
+
+    func copyWithNewID() -> Patch {
+        var copy = Patch(name: name, index: index, lane: lane)
+        // If copying from a copy, use the source ID for that copy
+        copy.sourceID = sourceID ?? id
+        return copy
+    }
+
+    mutating func resetCopyStatus() {
+        sourceID = nil
     }
 }

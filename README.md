@@ -14,9 +14,10 @@ The tool does not currently verify that the patch name is valid when renamed.
 Features:
 * Load all 5 banks at once from their root folder on disk.
 * Load a bank individually into any of the 5 lanes.
-* Reorder patches within a lane by drag-and-drop or cut-and-paste.
-* Move patches between banks by cut-and-paste.
-* Rename patches by additional click on name to enable edit.
+* Reorder patches within a lane by drag-and-drop.
+* Move patches between banks, or within a bank, by cut-and-paste.
+* Copy patches between banks, or within a bank, by copy-and-paste.
+* Rename patches by clicking on the name to enable edit.
 * Create a new bank by pasting patches into an empty bank.
 * Save the reorganised and/or created banks back to disk.
 
