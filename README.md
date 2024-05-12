@@ -5,7 +5,7 @@ The librarian works with files, not with MIDI. You can mount the synthesizer as 
 
 There might be bugs. Please back up your patch files before using this tool on them. The tool can edit the patch names (inside the files), can rename the files and both copy and move them on disk. Note that copying a patch also creates a new copy of the patch file.
 
-The tool expects a flat list of patch files within one directory per bank. The file names are expected to end with NNN.PRO, where NNN is a 3 digit, zero-padded number like 001. The sequence is expected to go from 001 upwards, with each file name incrementing the number by 1. Any part of the file name before NNN.PRO will be stripped away upon save to ensure internal tool consistency.
+The tool expects a flat list of patch files within one directory per bank. The file names are expected to end with NNN.PRO, where NNN is a 3 digit, zero-padded number like 001. The sequence is expected to go from 001 upwards, with each file name incrementing the number by 1. Any part of the file name before NNN.PRO will be stripped away upon save to ensure internal tool consistency. The number NNN must therefore be unique within the directory.
 
 The tool does not currently verify that the patch name is valid when a patch is renamed.
 

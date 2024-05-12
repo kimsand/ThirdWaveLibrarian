@@ -14,6 +14,7 @@ struct LineNumberFor {
 
 enum FileError: LocalizedError {
     case invalidFileName(fileName: String)
+    case duplicateFileIndex(dirName: String)
     case wrongFileHeader(fileName: String)
     case missingSubDir(dirName: String)
     case failedDirContents(dirName: String)
@@ -23,6 +24,8 @@ enum FileError: LocalizedError {
         switch self {
         case .invalidFileName(fileName: let fileName):
             "Invalid file name: \(fileName)"
+        case .duplicateFileIndex(dirName: let dirName):
+            "Duplicate file index: \(dirName)"
         case .wrongFileHeader(fileName: let fileName):
             "Invalid file header for \(fileName)"
         case .missingSubDir(dirName: let dirName):
@@ -38,6 +41,8 @@ enum FileError: LocalizedError {
         switch self {
         case .invalidFileName:
             "The patch file names must end with NNN.PRO, where NNN is a 3 digit, zero-padded number like 001."
+        case .duplicateFileIndex:
+            "Patch file names within a bank directory must have unique indices (NNN.PRO), even if the file names are otherwise unique."
         case .wrongFileHeader:
             "This is not a supported patch file."
         case .missingSubDir:

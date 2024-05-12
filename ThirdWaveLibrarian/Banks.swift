@@ -65,6 +65,13 @@ struct Banks {
         banks[type.rawValue].patches.append(contentsOf: patchList)
     }
 
+    private func validateIndices(forPatches patches: [Patch], dirName: String) throws {
+        let uniqued = Set(patches.map({$0.index}))
+        if patches.count != uniqued.count {
+            throw FileError.duplicateFileIndex(dirName: dirName)
+        }
+    }
+
     private func updateIndices(forPatches patches: inout [Patch]) {
         patches.enumerated().forEach { index, patch in
             if index != patch.newIndex {
@@ -443,6 +450,7 @@ struct Banks {
             if let bankType = BankType.allCases[safeIndex: lane] {
                 let bankURL = dirURL.appendingPathComponent(subDirName, conformingTo: .directory)
                 let patchList = try await fileHandler.openDir(at: bankURL, intoLane: lane)
+                try validateIndices(forPatches: patchList, dirName: subDirName)
                 load(patches: patchList, toBank: bankType, dirURL: bankURL)
                 rename(bank: bankType, withTitle: subDirName)
 
@@ -458,6 +466,7 @@ struct Banks {
 
     mutating func load(bank type: BankType, dirURL: URL) async throws {
         let patchList = try await fileHandler.openDir(at: dirURL, intoLane: type.rawValue)
+        try validateIndices(forPatches: patchList, dirName: dirURL.lastPathComponent)
         load(patches: patchList, toBank: type, dirURL: dirURL)
         rename(bank: type, withTitle: dirURL.lastPathComponent)
 
