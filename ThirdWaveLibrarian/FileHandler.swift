@@ -179,9 +179,15 @@ struct FileHandler {
     func renamePatch(fileURL: URL, newName: String) {
         do {
             let text = try String(contentsOf: fileURL, encoding: .utf8)
-            var lines = text.components(separatedBy: "\r\n")
+
+            guard let eolChar = text.firstMatch(of: /(\r\n|\r|\n)/)?.0 else {
+                assertionFailure("Unable to find EOL character with regex!")
+                return
+            }
+
+            var lines = text.components(separatedBy: eolChar)
             lines.replace(newName, at: LineNumberFor.patchName)
-            let result = lines.joined(separator: "\r\n")
+            let result = String(lines.joined(separator: eolChar))
             try result.write(to: fileURL, atomically: true, encoding: .utf8)
         } catch {
             assertionFailure("Rename patch failed! Error: \(error.localizedDescription)")
