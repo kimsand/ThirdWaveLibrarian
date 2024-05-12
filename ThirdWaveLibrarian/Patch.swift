@@ -16,6 +16,7 @@ struct Patch: Identifiable, Hashable, Comparable {
     private(set) var lane: Int
     private(set) var newLane: Int
     private(set) var sourceID: UUID?
+    private(set) var longFileName: String?
 
     static func < (lhs: Patch, rhs: Patch) -> Bool {
         return lhs.index < rhs.index
@@ -59,5 +60,13 @@ struct Patch: Identifiable, Hashable, Comparable {
 
     mutating func resetCopyStatus() {
         sourceID = nil
+    }
+
+    mutating func setLongFileName(_ filename: String) {
+        longFileName = filename
+    }
+
+    mutating func clearLongFileName() {
+        longFileName = nil
     }
 }

@@ -133,6 +133,16 @@ struct Banks {
         }
     }
 
+    mutating func clearLongFileNames(forBank type: BankType) {
+        banks[type.rawValue].patches.enumerated().forEach { index, patch in
+            if patch.longFileName != nil {
+                var patch = patch
+                patch.clearLongFileName()
+                banks[type.rawValue].patches.replace(patch, at: index)
+            }
+        }
+    }
+
     mutating func setSaveStatus(forBank type: BankType) {
         banks[type.rawValue].hasUnsavedChanges = true
     }
@@ -276,6 +286,32 @@ struct Banks {
         banks[type.rawValue].patches.filter({$0.name != $0.storedName})
     }
 
+    private func longFileNamePatches(forBank type: BankType) -> [Patch] {
+        banks[type.rawValue].patches.filter({$0.longFileName != nil})
+    }
+
+    func truncateLongFileNames(forBank type: BankType) {
+        longFileNamePatches(forBank: type).forEach { patch in
+            guard let fromType = BankType(rawValue: patch.lane) else {
+                assertionFailure("Truncate file name failed! Bank type for lane with index \(patch.lane) not found.")
+                return
+            }
+
+            guard let longFileName = patch.longFileName else {
+                assertionFailure("Truncate file name failed! Patch with index \(patch.index) not marked with long file name.")
+                return
+            }
+
+            let fromFileName = "\(longFileName).PRO"
+            let fromFileURL = dirURL(forBank: fromType).appending(path: fromFileName)
+
+            let toFileName = String(format: "%03d.PRO", patch.index+1)
+            let toFileURL = dirURL(forBank: fromType).appending(path: toFileName)
+
+            fileHandler.renameFile(fromURL: fromFileURL, toURL: toFileURL)
+        }
+    }
+
     func movePatchesToTemp(forBank toType: BankType) -> [Patch] {
         let patches = movedPatches(forBank: toType)
 
@@ -409,6 +445,12 @@ struct Banks {
                 let patchList = try await fileHandler.openDir(at: bankURL, intoLane: lane)
                 load(patches: patchList, toBank: bankType, dirURL: bankURL)
                 rename(bank: bankType, withTitle: subDirName)
+
+                if !longFileNamePatches(forBank: bankType).isEmpty {
+                    // Mark bank as having unsaved changes
+                    setSaveStatus(forBank: bankType)
+                }
+
                 lane += 1
             }
         }
@@ -418,10 +460,19 @@ struct Banks {
         let patchList = try await fileHandler.openDir(at: dirURL, intoLane: type.rawValue)
         load(patches: patchList, toBank: type, dirURL: dirURL)
         rename(bank: type, withTitle: dirURL.lastPathComponent)
+
+        if !longFileNamePatches(forBank: type).isEmpty {
+            // Mark bank as having unsaved changes
+            setSaveStatus(forBank: type)
+        }
     }
 
     mutating func save() {
         if areAllDirsLoaded {
+            // Ensure long file names are truncated before performing operations relying on short names
+            BankType.allCases.forEach({truncateLongFileNames(forBank: $0)})
+            BankType.allCases.forEach({clearLongFileNames(forBank: $0)})
+
             // Ensure patch files are copied before potentially being moved or deleted
             let copyPatches = BankType.allCases.flatMap({copyPatchesToTemp(forBank: $0)})
 

@@ -37,7 +37,7 @@ enum FileError: LocalizedError {
     var recoverySuggestion: String? {
         switch self {
         case .invalidFileName:
-            "The patch files must be named NNN.PRO, where NNN is a 3 digit, zero-padded number like 001."
+            "The patch file names must end with NNN.PRO, where NNN is a 3 digit, zero-padded number like 001."
         case .wrongFileHeader:
             "This is not a supported patch file."
         case .missingSubDir:
@@ -103,11 +103,17 @@ struct FileHandler {
                 }
 
                 let fileName = fileURL.deletingPathExtension().lastPathComponent
+                let fileSuffix = fileName.suffix(3)
+                let suffixName = String(fileSuffix)
 
-                // Convert filename into patch index (1-indexed to 0-indexed)
-                guard let fileInt = Int(fileName) else {
+                guard
+                    fileSuffix.count == 3,
+                    let fileInt = Int(suffixName)
+                else {
                     throw FileError.invalidFileName(fileName: fileName)
                 }
+
+                // Convert file suffix into patch index (1-indexed to 0-indexed)
                 let index = fileInt - 1
 
                 var lineNumber = 0
@@ -117,7 +123,13 @@ struct FileHandler {
                             throw FileError.wrongFileHeader(fileName: fileName)
                         }
                     } else if lineNumber == LineNumberFor.patchName {
-                        await patchActor.appendPatch(patch: Patch(name: line, index: index, lane: lane))
+                        if fileName == suffixName {
+                            await patchActor.appendPatch(patch: Patch(name: line, index: index, lane: lane))
+                        } else {
+                            var patch = Patch(name: line, index: index, lane: lane)
+                            patch.setLongFileName(fileName)
+                            await patchActor.appendPatch(patch: patch)
+                        }
                     }
 
                     lineNumber += 1
