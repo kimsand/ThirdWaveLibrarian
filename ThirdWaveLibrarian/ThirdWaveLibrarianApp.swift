@@ -30,11 +30,11 @@ struct ThirdWaveLibrarianApp: App {
                     panel.canChooseFiles = false
 
                     if panel.runModal() == .OK {
-                        Task {
+                        Task(priority: .userInitiated) {
                             do {
                                 if let dirURL = panel.url {
                                     banks = Banks()
-                                    try await banks.load(dirURL: dirURL)
+                                    try await $banks.load(dirURL: dirURL)
                                 }
                             } catch let error as FileError {
                                 self.error = error
@@ -55,10 +55,10 @@ struct ThirdWaveLibrarianApp: App {
                         panel.canChooseFiles = false
 
                         if panel.runModal() == .OK {
-                            Task {
+                            Task(priority: .userInitiated) {
                                 do {
                                     if let dirURL = panel.url {
-                                        try await banks.load(bank: type, dirURL: dirURL)
+                                        try await $banks.load(bank: type, dirURL: dirURL)
                                     }
                                 } catch let error as FileError {
                                     self.error = error
@@ -84,7 +84,7 @@ struct ThirdWaveLibrarianApp: App {
                             panel.prompt = "Create bank"
 
                             if panel.runModal() == .OK {
-                                Task {
+                                Task(priority: .userInitiated) {
                                     do {
                                         if let dirURL = panel.url {
                                             try banks.createDirIfMissing(forBank: type, dirURL: dirURL)
@@ -103,5 +103,18 @@ struct ThirdWaveLibrarianApp: App {
                 }.keyboardShortcut("s")
             }
         }
+    }
+}
+
+// Calling mutating async functions is no longer allowed on a struct through a bound value (binding). However, the bound reference ($binding) can call these functions on its own wrapped value.
+
+@MainActor
+extension Binding where Value == Banks {
+    func load(dirURL: URL) async throws {
+        try await wrappedValue.load(dirURL: dirURL)
+    }
+    
+    func load(bank type: BankType, dirURL: URL) async throws {
+        try await wrappedValue.load(bank: type, dirURL: dirURL)
     }
 }
