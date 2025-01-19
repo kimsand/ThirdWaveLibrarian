@@ -249,11 +249,11 @@ struct Banks {
 
         if isCopyAndPaste {
             // Insert copies of patches at paste position
-            banks[type.rawValue].patches.insert(contentsOf: cutBank.map({$0.copyWithNewID()}), at: pasteIndex)
+            banks[type.rawValue].patches.insert(contentsOf: cutBank.sorted().map({$0.copyWithNewID()}), at: pasteIndex)
             updateLanesAndIndices(forPatches: &banks[type.rawValue].patches, inLane: type.rawValue)
         } else if cutBankType != type {
             // Insert patches in new lane
-            banks[type.rawValue].patches.insert(contentsOf: cutBank, at: pasteIndex)
+            banks[type.rawValue].patches.insert(contentsOf: cutBank.sorted(), at: pasteIndex)
             updateLanesAndIndices(forPatches: &banks[type.rawValue].patches, inLane: type.rawValue)
 
             // Remove patches from old lane
