@@ -10,37 +10,46 @@ import SwiftUI
 struct BanksView: View {
     @Binding var banks: Banks
 
+    private func EmptyBanksList(type: BankType) -> some View {
+        List(selection: $banks.banks[type.rawValue].selections) {
+            Section {
+                ForEach($banks.banks[type.rawValue].placeholder, id: \.self, editActions: .move) { $patch in
+                    Text(patch.name).foregroundStyle(Color.secondary)
+                    }
+            } header: {
+                Text(banks.banks[type.rawValue].title)
+            }
+        }
+    }
+
+    private func LoadedBanksList(type: BankType) -> some View {
+        List(selection: $banks.banks[type.rawValue].selections) {
+            Section {
+                ForEach($banks.banks[type.rawValue].patches, id: \.self, editActions: .move) { $patch in
+                    AtomicTextField(patch.storedName, text: $patch.name, onEditingDone: ({
+                        banks.patchHasBeenRenamed(patch: patch, inBank: type)
+                    }))
+                }.onMove { from, to in
+                    banks.reorderPatches(from: from, to: to, inBank: type)
+                }
+            } header: {
+                Text(banks.banks[type.rawValue].title)
+            }
+        }
+    }
+
     var body: some View {
         VStack {
             HStack {
                 ForEach(BankType.allCases, id: \.rawValue) { type in
                     VStack(alignment: .leading) {
                         if banks.banks[type.rawValue].patches.isEmpty {
-                            List(selection: $banks.banks[type.rawValue].selections) {
-                                Section {
-                                    ForEach($banks.banks[type.rawValue].placeholder, id: \.self, editActions: .move) { $patch in
-                                        Text(patch.name).foregroundStyle(Color.secondary)
-                                        }
-                                } header: {
-                                    Text(banks.banks[type.rawValue].title)
-                                }
-                            }.onPasteCommand(of: ["public.plain-text"]) { _ in
+                            EmptyBanksList(type: type)
+                                .onPasteCommand(of: ["public.plain-text"]) { _ in
                                 banks.pasteCutPatches(toBank: type)
                             }
                         } else {
-                            List(selection: $banks.banks[type.rawValue].selections) {
-                                Section {
-                                    ForEach($banks.banks[type.rawValue].patches, id: \.self, editActions: .move) { $patch in
-                                        AtomicTextField(patch.storedName, text: $patch.name, onEditingDone: ({
-                                            banks.patchHasBeenRenamed(patch: patch, inBank: type)
-                                        }))
-                                    }.onMove { from, to in
-                                        banks.reorderPatches(from: from, to: to, inBank: type)
-                                    }
-                                } header: {
-                                    Text(banks.banks[type.rawValue].title)
-                                }
-                            }.onDeleteCommand {
+                            LoadedBanksList(type: type).onDeleteCommand {
                                 banks.removeSelectedPatches(fromBank: type)
                             }.onCutCommand {
                                 banks.cutPatches(fromBank: type)
