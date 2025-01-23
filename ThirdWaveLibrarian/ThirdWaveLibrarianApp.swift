@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import ThirdWaveLibrary
 
 @main
 struct ThirdWaveLibrarianApp: App {

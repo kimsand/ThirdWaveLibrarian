@@ -3,15 +3,11 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		E82B9BD32B14804B00000102 /* Banks.swift in Sources */ = {isa = PBXBuildFile; fileRef = E82B9BD22B14804B00000102 /* Banks.swift */; };
-		E844C0752B25CD3300B9971F /* Bank.swift in Sources */ = {isa = PBXBuildFile; fileRef = E844C0742B25CD3300B9971F /* Bank.swift */; };
-		E85651242B12FC380025B828 /* FileHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = E85651232B12FC380025B828 /* FileHandler.swift */; };
-		E85651262B1314CB0025B828 /* Patch.swift in Sources */ = {isa = PBXBuildFile; fileRef = E85651252B1314CB0025B828 /* Patch.swift */; };
-		E874754E2B175615005F237F /* Utilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = E874754D2B175615005F237F /* Utilities.swift */; };
+		E84D68052D426B5E00F23005 /* ThirdWaveLibrary in Frameworks */ = {isa = PBXBuildFile; productRef = E84D68042D426B5E00F23005 /* ThirdWaveLibrary */; };
 		E87BCF292B12F207005C2586 /* ThirdWaveLibrarianApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E87BCF282B12F207005C2586 /* ThirdWaveLibrarianApp.swift */; };
 		E87BCF2B2B12F207005C2586 /* BanksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E87BCF2A2B12F207005C2586 /* BanksView.swift */; };
 		E87BCF2D2B12F208005C2586 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E87BCF2C2B12F208005C2586 /* Assets.xcassets */; };
@@ -20,11 +16,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		E82B9BD22B14804B00000102 /* Banks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Banks.swift; sourceTree = "<group>"; };
-		E844C0742B25CD3300B9971F /* Bank.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bank.swift; sourceTree = "<group>"; };
-		E85651232B12FC380025B828 /* FileHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileHandler.swift; sourceTree = "<group>"; };
-		E85651252B1314CB0025B828 /* Patch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Patch.swift; sourceTree = "<group>"; };
-		E874754D2B175615005F237F /* Utilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utilities.swift; sourceTree = "<group>"; };
+		E84D68022D42556A00F23005 /* ThirdWaveLibrary */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ThirdWaveLibrary; sourceTree = "<group>"; };
 		E87BCF252B12F207005C2586 /* Third Wave Librarian.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Third Wave Librarian.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		E87BCF282B12F207005C2586 /* ThirdWaveLibrarianApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThirdWaveLibrarianApp.swift; sourceTree = "<group>"; };
 		E87BCF2A2B12F207005C2586 /* BanksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BanksView.swift; sourceTree = "<group>"; };
@@ -39,6 +31,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E84D68052D426B5E00F23005 /* ThirdWaveLibrary in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -48,6 +41,7 @@
 		E87BCF1C2B12F207005C2586 = {
 			isa = PBXGroup;
 			children = (
+				E84D68022D42556A00F23005 /* ThirdWaveLibrary */,
 				E87BCF272B12F207005C2586 /* ThirdWaveLibrarian */,
 				E87BCF262B12F207005C2586 /* Products */,
 			);
@@ -66,11 +60,6 @@
 			children = (
 				E87BCF282B12F207005C2586 /* ThirdWaveLibrarianApp.swift */,
 				E87BCF2A2B12F207005C2586 /* BanksView.swift */,
-				E82B9BD22B14804B00000102 /* Banks.swift */,
-				E844C0742B25CD3300B9971F /* Bank.swift */,
-				E85651252B1314CB0025B828 /* Patch.swift */,
-				E85651232B12FC380025B828 /* FileHandler.swift */,
-				E874754D2B175615005F237F /* Utilities.swift */,
 				E8EB10CE2B280E9D00A8973B /* ViewUtilities.swift */,
 				E87BCF2C2B12F208005C2586 /* Assets.xcassets */,
 				E87BCF312B12F208005C2586 /* ThirdWaveLibrarian.entitlements */,
@@ -131,6 +120,9 @@
 				Base,
 			);
 			mainGroup = E87BCF1C2B12F207005C2586;
+			packageReferences = (
+				E84D68032D426B5E00F23005 /* XCLocalSwiftPackageReference "ThirdWaveLibrary" */,
+			);
 			productRefGroup = E87BCF262B12F207005C2586 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -157,14 +149,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E874754E2B175615005F237F /* Utilities.swift in Sources */,
-				E85651262B1314CB0025B828 /* Patch.swift in Sources */,
-				E85651242B12FC380025B828 /* FileHandler.swift in Sources */,
-				E82B9BD32B14804B00000102 /* Banks.swift in Sources */,
 				E87BCF2B2B12F207005C2586 /* BanksView.swift in Sources */,
 				E8EB10CF2B280E9D00A8973B /* ViewUtilities.swift in Sources */,
 				E87BCF292B12F207005C2586 /* ThirdWaveLibrarianApp.swift in Sources */,
-				E844C0752B25CD3300B9971F /* Bank.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -372,6 +359,20 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		E84D68032D426B5E00F23005 /* XCLocalSwiftPackageReference "ThirdWaveLibrary" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ThirdWaveLibrary;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		E84D68042D426B5E00F23005 /* ThirdWaveLibrary */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ThirdWaveLibrary;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = E87BCF1D2B12F207005C2586 /* Project object */;
 }

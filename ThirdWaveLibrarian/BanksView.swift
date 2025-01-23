@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import ThirdWaveLibrary
 
 struct BanksView: View {
     @Binding var banks: Banks
