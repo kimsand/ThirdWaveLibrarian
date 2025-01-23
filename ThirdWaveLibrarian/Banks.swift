@@ -7,27 +7,37 @@
 
 import Foundation
 
-enum BankType: Int, CaseIterable {
+public enum BankType: Int, CaseIterable, Sendable {
     case bank1, bank2, bank3, bank4, bank5
 }
 
-struct Banks {
-    let fileHandler = FileHandler()
+@available(macOS 15.0, *)
+public struct Banks: Sendable {
+    private let fileHandler = FileHandler()
 
-    var banks = [
-        Bank(title: "Bank lane 1", saveName: "Bank 1"),
-        Bank(title: "Bank lane 2", saveName: "Bank 2"),
-        Bank(title: "Bank lane 3", saveName: "Bank 3"),
-        Bank(title: "Bank lane 4", saveName: "Bank 4"),
-        Bank(title: "Bank lane 5", saveName: "Bank 5")
-    ]
+    public var banks: [Bank] = []
 
     private(set) var cutBank = Set<Patch>()
     private(set) var cutBankType = BankType.bank1
     private(set) var isCopyAndPaste = false
     private(set) var toBeDeleted = [Patch]()
 
-    func saveName(forBank type: BankType) -> String {
+    public init(banks: [Bank]? = nil) {
+        if let banks {
+            self.banks = banks
+        } else {
+            self.banks =
+            [
+                Bank(title: "Bank lane 1", saveName: "Bank 1"),
+                Bank(title: "Bank lane 2", saveName: "Bank 2"),
+                Bank(title: "Bank lane 3", saveName: "Bank 3"),
+                Bank(title: "Bank lane 4", saveName: "Bank 4"),
+                Bank(title: "Bank lane 5", saveName: "Bank 5")
+            ]
+        }
+    }
+    
+    public func saveName(forBank type: BankType) -> String {
         if banks[type.rawValue].isDirLoaded {
             banks[type.rawValue].title
         } else {
@@ -35,7 +45,7 @@ struct Banks {
         }
     }
 
-    func patchWithID(_ patchID: Patch.ID) -> Patch? {
+    private func patchWithID(_ patchID: Patch.ID) -> Patch? {
         BankType.allCases.compactMap({banks[$0.rawValue].patches.first(where: {$0.id == patchID})}).first
     }
 
@@ -43,11 +53,11 @@ struct Banks {
         banks[type.rawValue].dirURL
     }
 
-    mutating func rename(bank type: BankType, withTitle title: String) {
+    private mutating func rename(bank type: BankType, withTitle title: String) {
         banks[type.rawValue].title = title
     }
 
-    mutating func load(patches patchList: [Patch], toBank type: BankType, dirURL: URL) {
+    private mutating func load(patches patchList: [Patch], toBank type: BankType, dirURL: URL) {
         banks[type.rawValue].dirURL = dirURL
         banks[type.rawValue].isDirLoaded = true
 
@@ -61,7 +71,7 @@ struct Banks {
         clearSaveStatus(forBank: type)
     }
 
-    mutating func append(patches patchList: [Patch], toBank type: BankType) {
+    private mutating func append(patches patchList: [Patch], toBank type: BankType) {
         banks[type.rawValue].patches.append(contentsOf: patchList)
     }
 
@@ -112,7 +122,7 @@ struct Banks {
         }
     }
 
-    mutating func resetLanesAndIndices(forBank type: BankType) {
+    private mutating func resetLanesAndIndices(forBank type: BankType) {
         resetLanesAndIndices(forPatches: &banks[type.rawValue].patches)
     }
 
@@ -126,11 +136,11 @@ struct Banks {
         }
     }
 
-    mutating func resetPatchNames(forBank type: BankType) {
+    private mutating func resetPatchNames(forBank type: BankType) {
         resetPatchNames(forPatches: &banks[type.rawValue].patches)
     }
 
-    mutating func resetCopyStatuses(forBank type: BankType) {
+    private mutating func resetCopyStatuses(forBank type: BankType) {
         banks[type.rawValue].patches.enumerated().forEach { index, patch in
             if patch.sourceID != nil {
                 var patch = patch
@@ -140,7 +150,7 @@ struct Banks {
         }
     }
 
-    mutating func clearLongFileNames(forBank type: BankType) {
+    private mutating func clearLongFileNames(forBank type: BankType) {
         banks[type.rawValue].patches.enumerated().forEach { index, patch in
             if patch.longFileName != nil {
                 var patch = patch
@@ -150,16 +160,16 @@ struct Banks {
         }
     }
 
-    mutating func setSaveStatus(forBank type: BankType) {
+    private mutating func setSaveStatus(forBank type: BankType) {
         banks[type.rawValue].hasUnsavedChanges = true
     }
 
-    mutating func clearSaveStatus(forBank type: BankType) {
+    private mutating func clearSaveStatus(forBank type: BankType) {
         banks[type.rawValue].hasUnsavedChanges = false
     }
 
-    mutating func reorderPatches(from indexSet: IndexSet, to index: Int, inBank type: BankType) {
-        banks[type.rawValue].patches.move(fromOffsets: indexSet, toOffset: index)
+    public mutating func reorderPatches(from indexSet: IndexSet, to index: Int, inBank type: BankType) {
+        banks[type.rawValue].patches.moveSubranges(RangeSet(indexSet), to: index)
         updateIndices(forPatches: &banks[type.rawValue].patches)
 
         // Remove selections since this is not automatic
@@ -169,7 +179,7 @@ struct Banks {
         setSaveStatus(forBank: type)
     }
 
-    mutating func removeSelectedPatches(fromBank type: BankType) {
+    public mutating func removeSelectedPatches(fromBank type: BankType) {
         let patchList = Array(banks[type.rawValue].selections)
         markPatchesForDeletion(patches: patchList)
         remove(patches: patchList, fromBank: type)
@@ -188,14 +198,14 @@ struct Banks {
     }
 
     private mutating func remove(patches patchList: [Patch], fromBank type: BankType) {
-        banks[type.rawValue].patches.remove(
-            atOffsets: IndexSet(patchList.compactMap({patch in
+        banks[type.rawValue].patches.removeSubranges(
+            RangeSet(IndexSet(patchList.compactMap({patch in
                 banks[type.rawValue].patches.firstIndex(where: {patch.id == $0.id})
-            }))
+            })))
         )
     }
 
-    mutating func patchHasBeenRenamed(patch: Patch, inBank type: BankType) {
+    public mutating func patchHasBeenRenamed(patch: Patch, inBank type: BankType) {
         if let selPatch = banks[type.rawValue].selections.first(where: {$0.id == patch.id}) {
             banks[type.rawValue].selections.remove(selPatch)
             banks[type.rawValue].selections.insert(patch)
@@ -205,21 +215,21 @@ struct Banks {
         setSaveStatus(forBank: type)
     }
 
-    mutating func cutPatches(fromBank type: BankType) {
+    public mutating func cutPatches(fromBank type: BankType) {
         // Make a copy (assign by value) of the list of currently selected items for the bank
         cutBank = banks[type.rawValue].selections
         cutBankType = type
         isCopyAndPaste = false
     }
 
-    mutating func copyPatches(fromBank type: BankType) {
+    public mutating func copyPatches(fromBank type: BankType) {
         // Make a copy (assign by value) of the list of currently selected items for the bank
         cutBank = banks[type.rawValue].selections
         cutBankType = type
         isCopyAndPaste = true
     }
 
-    mutating func pasteCutPatches(toBank type: BankType) {
+    public mutating func pasteCutPatches(toBank type: BankType) {
         let pasteIndex: Int
 
         guard !cutBank.isEmpty else {
@@ -264,11 +274,10 @@ struct Banks {
             setSaveStatus(forBank: cutBankType)
         } else {
             // Reorder patches within lane
-            banks[type.rawValue].patches.move(
-                fromOffsets: IndexSet(cutBank.compactMap({patch in
+            banks[type.rawValue].patches.moveSubranges(RangeSet(IndexSet(cutBank.compactMap({patch in
                     banks[type.rawValue].patches.firstIndex(where: {patch.id == $0.id})
-                })),
-                toOffset: pasteIndex
+                }))),
+                to: pasteIndex
             )
             updateIndices(forPatches: &banks[type.rawValue].patches)
         }
@@ -297,7 +306,7 @@ struct Banks {
         banks[type.rawValue].patches.filter({$0.longFileName != nil})
     }
 
-    func truncateLongFileNames(forBank type: BankType) {
+    private func truncateLongFileNames(forBank type: BankType) {
         longFileNamePatches(forBank: type).forEach { patch in
             guard let fromType = BankType(rawValue: patch.lane) else {
                 assertionFailure("Truncate file name failed! Bank type for lane with index \(patch.lane) not found.")
@@ -319,7 +328,7 @@ struct Banks {
         }
     }
 
-    func movePatchesToTemp(forBank toType: BankType) -> [Patch] {
+    private func movePatchesToTemp(forBank toType: BankType) -> [Patch] {
         let patches = movedPatches(forBank: toType)
 
         // Rename to temporary filenames to avoid clashing with existing filenames
@@ -341,7 +350,7 @@ struct Banks {
         return patches
     }
 
-    func copyPatchesToTemp(forBank toType: BankType) -> [Patch] {
+    private func copyPatchesToTemp(forBank toType: BankType) -> [Patch] {
         let patches = copiedPatches(forBank: toType)
 
         // Rename to temporary filenames to avoid clashing with existing filenames
@@ -372,7 +381,7 @@ struct Banks {
         return patches
     }
 
-    func renameTempPatches(_ patchList: [Patch]) {
+    private func renameTempPatches(_ patchList: [Patch]) {
         // Rename to actual filenames when there is no longer a risk of name clash
         patchList.forEach { patch in
             guard let type = BankType(rawValue: patch.newLane) else {
@@ -390,7 +399,7 @@ struct Banks {
         }
     }
 
-    func saveRenamedPatches(forBank type: BankType) {
+    private func saveRenamedPatches(forBank type: BankType) {
         renamedPatches(forBank: type).forEach { patch in
             let fileName = String(format: "%03d.PRO", patch.index+1)
             let fileURL = dirURL(forBank: type).appending(path: fileName)
@@ -398,7 +407,7 @@ struct Banks {
         }
     }
 
-    mutating func deleteMarkedPatches() {
+    private mutating func deleteMarkedPatches() {
         toBeDeleted.forEach { patch in
             guard let bankType = BankType(rawValue: patch.lane) else {
                 assertionFailure("Deletion failed! Bank type for lane with index \(patch.lane) not found.")
@@ -414,7 +423,7 @@ struct Banks {
         toBeDeleted.removeAll()
     }
 
-    func isDirMissing(forBank type: BankType) -> Bool {
+    public func isDirMissing(forBank type: BankType) -> Bool {
         let hasPatches = !banks[type.rawValue].patches.isEmpty
 
         if banks[type.rawValue].isDirLoaded {
@@ -434,21 +443,21 @@ struct Banks {
         return true
     }
 
-    mutating func createDirIfMissing(forBank type: BankType, dirURL: URL) throws {
+    public mutating func createDirIfMissing(forBank type: BankType, dirURL: URL) throws {
         try fileHandler.createDir(dirURL: dirURL)
         banks[type.rawValue].title = dirURL.lastPathComponent
         banks[type.rawValue].dirURL = dirURL
         banks[type.rawValue].isDirLoaded = true
     }
 
-    mutating func load(dirURL: URL) async throws {
+    public mutating func load(dirURL: URL) async throws {
         let subDirNames = try await fileHandler.subDirNames(at: dirURL)
         let lastLane = min(subDirNames.count, 5)
         var lane = 0
 
         for subDirName in subDirNames[lane..<lastLane] {
             if let bankType = BankType.allCases[safeIndex: lane] {
-                let bankURL = dirURL.appendingPathComponent(subDirName, conformingTo: .directory)
+                let bankURL = dirURL.appending(path: subDirName)
                 let patchList = try await fileHandler.openDir(at: bankURL, intoLane: lane)
                 try validateIndices(forPatches: patchList, dirName: subDirName)
                 load(patches: patchList, toBank: bankType, dirURL: bankURL)
@@ -464,7 +473,7 @@ struct Banks {
         }
     }
 
-    mutating func load(bank type: BankType, dirURL: URL) async throws {
+    public mutating func load(bank type: BankType, dirURL: URL) async throws {
         let patchList = try await fileHandler.openDir(at: dirURL, intoLane: type.rawValue)
         try validateIndices(forPatches: patchList, dirName: dirURL.lastPathComponent)
         load(patches: patchList, toBank: type, dirURL: dirURL)
@@ -476,7 +485,7 @@ struct Banks {
         }
     }
 
-    mutating func save() {
+    public mutating func save() {
         if areAllDirsLoaded {
             // Ensure long file names are truncated before performing operations relying on short names
             BankType.allCases.forEach({truncateLongFileNames(forBank: $0)})

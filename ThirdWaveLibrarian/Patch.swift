@@ -7,10 +7,10 @@
 
 import Foundation
 
-struct Patch: Identifiable, Hashable, Comparable {
-    let id = UUID()
-    var name: String
-    private(set) var storedName: String
+public struct Patch: Identifiable, Hashable, Comparable, Sendable {
+    public let id = UUID()
+    public var name: String
+    private(set) public var storedName: String
     private(set) var index: Int
     private(set) var newIndex: Int
     private(set) var lane: Int
@@ -18,11 +18,11 @@ struct Patch: Identifiable, Hashable, Comparable {
     private(set) var sourceID: UUID?
     private(set) var longFileName: String?
 
-    static func < (lhs: Patch, rhs: Patch) -> Bool {
+    public static func < (lhs: Patch, rhs: Patch) -> Bool {
         return lhs.index < rhs.index
     }
 
-    init(name: String, index: Int, lane: Int) {
+    public init(name: String, index: Int, lane: Int) {
         self.name = name
         self.storedName = name
         self.index = index

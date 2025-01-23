@@ -7,12 +7,12 @@
 
 import Foundation
 
-struct LineNumberFor {
+private struct LineNumberFor {
     static let fileFormat = 0
     static let patchName = 1
 }
 
-enum FileError: LocalizedError {
+public enum FileError: LocalizedError {
     case invalidFileName(fileName: String)
     case duplicateFileIndex(dirName: String)
     case wrongFileHeader(fileName: String)
@@ -20,7 +20,7 @@ enum FileError: LocalizedError {
     case failedDirContents(dirName: String)
     case createDirFailed(dirName: String)
 
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .invalidFileName(fileName: let fileName):
             "Invalid file name: \(fileName)"
@@ -37,7 +37,7 @@ enum FileError: LocalizedError {
         }
     }
 
-    var recoverySuggestion: String? {
+    public var recoverySuggestion: String? {
         switch self {
         case .invalidFileName:
             "The patch file names must end with NNN.PRO, where NNN is a 3 digit, zero-padded number like 001."
@@ -55,6 +55,7 @@ enum FileError: LocalizedError {
     }
 }
 
+@available(macOS 15.0, *)
 private actor PatchActor {
     private var patches = [Patch]()
 
@@ -67,6 +68,7 @@ private actor PatchActor {
     }
 }
 
+@available(macOS 15.0, *)
 struct FileHandler {
     let options: FileManager.DirectoryEnumerationOptions = [.skipsHiddenFiles, .skipsPackageDescendants, .skipsSubdirectoryDescendants]
 
