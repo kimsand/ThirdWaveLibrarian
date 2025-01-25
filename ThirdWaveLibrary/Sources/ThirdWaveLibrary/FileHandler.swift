@@ -241,4 +241,12 @@ struct FileHandler {
             assertionFailure("Delete file failed! Error: \(error.localizedDescription)")
         }
     }
+
+    func writeTextToFile(fileURL: URL, text: String) {
+        do {
+            try text.write(to: fileURL, atomically: true, encoding: .utf8)
+        } catch {
+            assertionFailure("Writing to file failed! Error: \(error.localizedDescription)")
+        }
+    }
 }

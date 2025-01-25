@@ -453,7 +453,7 @@ public struct Banks: Sendable {
 
     public mutating func load(dirURL: URL) async throws {
         let subDirNames = try await fileHandler.subDirNames(at: dirURL)
-        let lastLane = min(subDirNames.count, 5)
+        let lastLane = min(subDirNames.count, BankType.allCases.count)
         var lane = 0
 
         for subDirName in subDirNames[lane..<lastLane] {
@@ -513,5 +513,21 @@ public struct Banks: Sendable {
             // Mark bank as no longer having unsaved changes
             BankType.allCases.forEach({clearSaveStatus(forBank: $0)})
         }
+    }
+
+    private func textRepresentation(eolChar: String = "\r\n") -> String {
+        banks
+            .map { bank in
+                "[\(bank.title)]\(eolChar)" +
+                bank.patches.map { patch in
+                    "\(patch.name)"
+                }
+                .joined(separator: eolChar)
+            }
+            .joined(separator: "\(eolChar)\(eolChar)")
+    }
+
+    public func writeBankTextToFile(fileURL: URL) {
+        fileHandler.writeTextToFile(fileURL: fileURL, text: textRepresentation())
     }
 }
