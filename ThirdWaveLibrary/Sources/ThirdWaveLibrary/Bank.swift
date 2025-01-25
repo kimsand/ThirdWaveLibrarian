@@ -7,13 +7,13 @@
 
 import Foundation
 
-@available(macOS 15.0, *)
+@available(macOS 13.0, *)
 public struct Bank: Sendable {
     public var patches = [Patch]()
     public var selections = Set<Patch>()
     public var title: String
     let saveName: String
-    var dirURL = URL.documentsDirectory
+    var dirURL = URL.currentDirectory()
     var isDirLoaded = false
     public var placeholder = [Patch(name: "Placeholder", index: 0, lane: 0)]
     public var hasUnsavedChanges = false

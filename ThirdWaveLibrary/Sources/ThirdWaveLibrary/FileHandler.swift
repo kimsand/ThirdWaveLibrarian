@@ -55,7 +55,7 @@ public enum FileError: LocalizedError {
     }
 }
 
-@available(macOS 15.0, *)
+@available(macOS 13.0, *)
 private actor PatchActor {
     private var patches = [Patch]()
 
@@ -68,7 +68,7 @@ private actor PatchActor {
     }
 }
 
-@available(macOS 15.0, *)
+@available(macOS 13.0, *)
 struct FileHandler {
     let options: FileManager.DirectoryEnumerationOptions = [.skipsHiddenFiles, .skipsPackageDescendants, .skipsSubdirectoryDescendants]
 
@@ -100,8 +100,8 @@ struct FileHandler {
 
     func openDir(at dirURL: URL, intoLane lane: Int) async throws -> [Patch] {
         let patchActor = PatchActor()
-
-        let task = Task {
+        
+        do {
             let filesInDir = filesInDirectory(at: dirURL, options: options)
 
             for await fileURL in filesInDir {
@@ -120,33 +120,71 @@ struct FileHandler {
                     throw FileError.invalidFileName(fileName: fileName)
                 }
 
+                guard let inputStream = InputStream(url: fileURL) else {
+                    throw FileError.wrongFileHeader(fileName: fileName)
+                }
+
+                // The buffer size must correspond with the number of lines to read
+                let nrOfLinesToRead = 2
+                let bufferSize = 10 + 32 // header + patch name
+
+                inputStream.open()
+                let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: bufferSize)
+
+                defer {
+                    buffer.deallocate()
+                    inputStream.close()
+                }
+
                 // Convert file suffix into patch index (1-indexed to 0-indexed)
                 let index = fileInt - 1
 
                 var lineNumber = 0
-                for try await line in fileURL.lines.prefix(2) {
-                    if lineNumber == LineNumberFor.fileFormat {
-                        guard line.starts(with: "W3_PROG") else {
-                            throw FileError.wrongFileHeader(fileName: fileName)
+                var lineData = Data()
+
+                while inputStream.hasBytesAvailable {
+                    let nrOfBytesRead = inputStream.read(buffer, maxLength: bufferSize)
+                    if nrOfBytesRead < 0 {
+                        throw FileError.wrongFileHeader(fileName: fileName)
+                    }
+
+                    for i in 0..<nrOfBytesRead {
+                        if buffer[i] == UInt8(ascii: "\n") {
+                            if let line = String(data: lineData, encoding: .utf8) {
+                                if lineNumber == LineNumberFor.fileFormat {
+                                    guard line.starts(with: "W3_PROG") else {
+                                        throw FileError.wrongFileHeader(fileName: fileName)
+                                    }
+                                } else if lineNumber == LineNumberFor.patchName {
+                                    if fileName == suffixName {
+                                        await patchActor.appendPatch(patch: Patch(name: line, index: index, lane: lane))
+                                    } else {
+                                        var patch = Patch(name: line, index: index, lane: lane)
+                                        patch.setLongFileName(fileName)
+                                        await patchActor.appendPatch(patch: patch)
+                                    }
+                                }
+                            }
+
+                            lineData = Data()
+                            lineNumber += 1
+                        } else if buffer[i] != UInt8(ascii: "\r") {
+                            lineData.append(buffer[i])
                         }
-                    } else if lineNumber == LineNumberFor.patchName {
-                        if fileName == suffixName {
-                            await patchActor.appendPatch(patch: Patch(name: line, index: index, lane: lane))
-                        } else {
-                            var patch = Patch(name: line, index: index, lane: lane)
-                            patch.setLongFileName(fileName)
-                            await patchActor.appendPatch(patch: patch)
+
+                        if lineNumber >= nrOfLinesToRead {
+                            break
                         }
                     }
 
-                    lineNumber += 1
+                    if lineNumber >= nrOfLinesToRead {
+                        break
+                    }
                 }
             }
 
             return await patchActor.patchList()
         }
-
-        return try await task.value
     }
 
     func doesDirExist(dirURL: URL) -> Bool {

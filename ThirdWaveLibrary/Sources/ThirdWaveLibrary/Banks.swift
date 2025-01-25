@@ -6,12 +6,13 @@
 //
 
 import Foundation
+import SE0270_RangeSet
 
 public enum BankType: Int, CaseIterable, Sendable {
     case bank1, bank2, bank3, bank4, bank5
 }
 
-@available(macOS 15.0, *)
+@available(macOS 13.0, *)
 public struct Banks: Sendable {
     private let fileHandler = FileHandler()
 
@@ -169,7 +170,7 @@ public struct Banks: Sendable {
     }
 
     public mutating func reorderPatches(from indexSet: IndexSet, to index: Int, inBank type: BankType) {
-        banks[type.rawValue].patches.moveSubranges(RangeSet(indexSet), to: index)
+        banks[type.rawValue].patches.moveSubranges(RangeSet(indexSet.rangeView), to: index)
         updateIndices(forPatches: &banks[type.rawValue].patches)
 
         // Remove selections since this is not automatic
@@ -201,7 +202,7 @@ public struct Banks: Sendable {
         banks[type.rawValue].patches.removeSubranges(
             RangeSet(IndexSet(patchList.compactMap({patch in
                 banks[type.rawValue].patches.firstIndex(where: {patch.id == $0.id})
-            })))
+            })).rangeView)
         )
     }
 
@@ -275,8 +276,8 @@ public struct Banks: Sendable {
         } else {
             // Reorder patches within lane
             banks[type.rawValue].patches.moveSubranges(RangeSet(IndexSet(cutBank.compactMap({patch in
-                    banks[type.rawValue].patches.firstIndex(where: {patch.id == $0.id})
-                }))),
+                banks[type.rawValue].patches.firstIndex(where: {patch.id == $0.id})
+            })).rangeView),
                 to: pasteIndex
             )
             updateIndices(forPatches: &banks[type.rawValue].patches)
